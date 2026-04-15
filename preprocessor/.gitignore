@@ -1,0 +1,25 @@
+# Python
+backend/.venv/
+backend/__pycache__/
+backend/app/__pycache__/
+backend/app/api/__pycache__/
+backend/app/modules/__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# 이미지 저장 디렉토리 (런타임 생성)
+backend/images/
+
+# 환경변수
+.env
+*.env
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,64 @@
+version: "3.9"
+
+services:
+  # ── Wiki Agent 백엔드 (포트 8001) ──────────────────────────────────────────
+  wiki-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    volumes:
+      - wiki_data:/app/data
+    environment:
+      # 필수: 아래 값을 .env 파일 또는 환경변수로 주입
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/telecom.db}
+      - JWT_SECRET=${JWT_SECRET}
+      - JIHYE_GATEWAY_URL=${JIHYE_GATEWAY_URL:-https://jihye.ucube.lgudax.cool/api/bedrock/us.anthropic.claude-sonnet-4-6}
+      - CHROMA_PATH=/app/data/chroma
+      - DOCUMENTS_PATH=/app/data/documents
+      - IMAGES_PATH=/app/data/images
+      - MARKDOWNS_PATH=/app/data/markdowns
+      - HF_HOME=/app/data/hf_cache
+      # Supabase (선택 — 설정 시 로컬 스토리지 대신 사용)
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_KEY=${SUPABASE_KEY:-}
+      - SUPABASE_BUCKET=${SUPABASE_BUCKET:-telecom-wiki}
+      # CORS: 실제 프론트엔드 URL로 교체
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173,http://localhost:1024}
+      - BACKEND_PORT=8001
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── 전처리 도구 백엔드 (포트 8000) ────────────────────────────────────────
+  prep-backend:
+    build:
+      context: ./preprocessor/backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - prep_data:/app/data
+      - prep_images:/app/images
+    environment:
+      - JIHYE_TOKEN=${JIHYE_TOKEN:-}
+      - BACKEND_PORT=8000
+      - CORS_ORIGINS=${PREP_CORS_ORIGINS:-http://localhost:5173,http://localhost:1024}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  wiki_data:
+    driver: local
+  prep_data:
+    driver: local
+  prep_images:
+    driver: local

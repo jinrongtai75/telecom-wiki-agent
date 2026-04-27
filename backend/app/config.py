@@ -19,7 +19,8 @@ class Settings(BaseSettings):
     markdowns_path: str = "./data/markdowns"
 
     backend_port: int = 8001
-    cors_origins: str = "http://localhost:5173,http://localhost:1024"
+    # 로컬 기본값 — Railway 환경변수 CORS_ORIGINS 로 Vercel URL 추가
+    cors_origins: str = "http://localhost:5173,http://localhost:1024,https://telecom-wiki-agent-kbbr.vercel.app,https://telecom-wiki-agent.vercel.app"
 
     # 전처리 도구
     preprocessor_frontend_url: str = "http://localhost:1024"

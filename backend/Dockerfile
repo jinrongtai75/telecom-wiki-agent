@@ -26,7 +26,8 @@ ENV HF_HOME=/app/data/hf_cache
 # .venv의 bin 디렉터리를 PATH에 추가하여 uvicorn을 직접 실행
 ENV PATH="/app/.venv/bin:$PATH"
 
-EXPOSE 8001
+# Railway가 $PORT를 주입, 없으면 8001 fallback
+ENV PORT=8001
+EXPOSE $PORT
 
-# Railway는 $PORT를 동적으로 주입 — shell form으로 변수 치환 활성화
-CMD uvicorn app.main:app --host 0.0.0.0 --port $PORT
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT}

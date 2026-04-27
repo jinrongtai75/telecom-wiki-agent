@@ -8,9 +8,12 @@ from __future__ import annotations
 
 import os
 
-# 모델이 로컬 캐시에 있으면 HuggingFace 온라인 체크 생략 (사내망 SSL 우회)
-os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
-os.environ.setdefault("HF_HUB_OFFLINE", "1")
+# 로컬 캐시가 있을 때만 오프라인 모드 (Railway 등 클라우드 환경에서는 다운로드 허용)
+# 환경변수로 HF_HUB_OFFLINE=1 을 명시한 경우에만 오프라인 모드 유지
+_offline = os.environ.get("HF_HUB_OFFLINE", "0") == "1"
+if not _offline:
+    os.environ.pop("TRANSFORMERS_OFFLINE", None)
+    os.environ.pop("HF_HUB_OFFLINE", None)
 
 import chromadb
 from chromadb.utils import embedding_functions

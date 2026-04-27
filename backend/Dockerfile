@@ -22,7 +22,7 @@ RUN mkdir -p data/chroma data/images data/documents data/markdowns
 
 # HuggingFace 모델을 빌드 시 미리 다운로드 (컨테이너 시작 시 지연 제거)
 ENV HF_HOME=/app/hf_cache
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('intfloat/multilingual-e5-large')"
+RUN .venv/bin/python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('intfloat/multilingual-e5-large')"
 
 # .venv의 bin 디렉터리를 PATH에 추가하여 uvicorn을 직접 실행
 ENV PATH="/app/.venv/bin:$PATH"

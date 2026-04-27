@@ -28,4 +28,5 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8001
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
+# Railway는 $PORT를 동적으로 주입 — shell form으로 변수 치환 활성화
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8001}

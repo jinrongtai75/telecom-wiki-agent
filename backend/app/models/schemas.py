@@ -28,6 +28,25 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class InitAdminRequest(BaseModel):
+    username: str
+    password: str
+
+    @field_validator("username")
+    @classmethod
+    def username_valid(cls, v: str) -> str:
+        if not v or len(v) < 3 or len(v) > 50:
+            raise ValueError("username must be 3-50 chars")
+        return v
+
+    @field_validator("password")
+    @classmethod
+    def password_valid(cls, v: str) -> str:
+        if len(v) < 6:
+            raise ValueError("password must be at least 6 chars")
+        return v
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip install --no-cache-dir uv
 
 # 의존성 먼저 설치 (레이어 캐싱 활용)
-COPY pyproject.toml uv.lock* ./
-RUN uv sync --frozen --no-dev
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
 
 # 앱 코드 복사
 COPY app/ app/
@@ -23,6 +23,9 @@ RUN mkdir -p data/chroma data/images data/documents data/markdowns
 # HuggingFace 모델 캐시를 볼륨 내부에 저장
 ENV HF_HOME=/app/data/hf_cache
 
+# .venv의 bin 디렉터리를 PATH에 추가하여 uvicorn을 직접 실행
+ENV PATH="/app/.venv/bin:$PATH"
+
 EXPOSE 8001
 
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]

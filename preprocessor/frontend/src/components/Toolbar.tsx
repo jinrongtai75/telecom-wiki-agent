@@ -9,7 +9,7 @@ import {
 import {
   uploadDocument, denoise, getNoiseCandidates,
   exportDocument, exportDocumentContent, ingestToWikiAgent,
-  reviewTable, reviewImage,
+  reviewTable, reviewImage, listKeys,
 } from '../api/client';
 import type { DocumentObject } from '../types';
 import SettingsPanel from './SettingsPanel';
@@ -151,6 +151,8 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
     if (!docId) return message.warning('문서를 먼저 업로드해주세요');
     const targets = objects.filter((o) => o.type === 'table');
     if (targets.length === 0) return message.info('표 객체가 없습니다');
+    const keys = await listKeys().catch(() => ({} as Record<string, boolean>));
+    if (!keys.jihye) return message.error('JIHYE 토큰이 설정되지 않았습니다. 설정 패널에서 먼저 저장해주세요.');
     setReviewingTable(true);
     let kept = 0, flattened = 0, failed = 0;
     const updatedObjects = [...objects];
@@ -180,6 +182,8 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
     if (!docId) return message.warning('문서를 먼저 업로드해주세요');
     const targets = objects.filter((o) => o.type === 'image');
     if (targets.length === 0) return message.info('이미지 객체가 없습니다');
+    const keys = await listKeys().catch(() => ({} as Record<string, boolean>));
+    if (!keys.jihye) return message.error('JIHYE 토큰이 설정되지 않았습니다. 설정 패널에서 먼저 저장해주세요.');
     setReviewingImage(true);
     let saved = 0, described = 0, discarded = 0, failed = 0;
     let currentObjects = [...objects];

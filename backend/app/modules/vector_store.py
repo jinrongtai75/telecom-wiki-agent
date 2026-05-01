@@ -12,7 +12,6 @@ from app.config import settings
 from app.modules.chunker import IndexChunk
 
 COLLECTION_NAME = "telecom_docs"
-EMBED_MODEL = "intfloat/multilingual-e5-small"
 
 # 싱글톤 — 첫 검색 요청 시 초기화 (lazy)
 _chroma_client = None
@@ -20,20 +19,14 @@ _collection = None
 
 
 def _get_collection():
-    # chromadb와 sentence-transformers는 첫 호출 시에만 import (시작시간 단축)
     import chromadb  # noqa: PLC0415
-    from chromadb.utils import embedding_functions  # noqa: PLC0415
-
-    # HF 모델 다운로드 허용 (HF_HUB_OFFLINE 환경변수 없을 때)
-    if os.environ.get("HF_HUB_OFFLINE", "0") != "1":
-        os.environ.pop("TRANSFORMERS_OFFLINE", None)
-        os.environ.pop("HF_HUB_OFFLINE", None)
+    from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2  # noqa: PLC0415
 
     global _chroma_client, _collection
     if _chroma_client is None:
         _chroma_client = chromadb.PersistentClient(path=settings.chroma_path)
     if _collection is None:
-        ef = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=EMBED_MODEL)
+        ef = ONNXMiniLM_L6_V2()  # chromadb 번들 모델 — 별도 다운로드 없음
         _collection = _chroma_client.get_or_create_collection(
             name=COLLECTION_NAME,
             embedding_function=ef,

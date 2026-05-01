@@ -16,4 +16,17 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'pdf-worker': ['pdfjs-dist'],
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
+  },
+  optimizeDeps: {
+    include: ['pdfjs-dist'],
+  },
 })

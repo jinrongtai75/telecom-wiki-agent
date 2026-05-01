@@ -1,0 +1,12 @@
+# 메인 프론트엔드(frontend/) 배포 시 불필요한 경로 제외
+# Vercel 프로젝트 Root Directory = frontend/ 로 설정된 경우 이 파일은 무시됨
+preprocessor/
+backend/
+nginx.conf
+docker-compose.yml
+deploy.sh
+start.sh
+.pre-commit-config.yaml
+.kiro/
+AGENTS.md
+CLAUDE.md

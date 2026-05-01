@@ -1,0 +1,2 @@
+# 전처리 프론트엔드 Vercel 빌드 시 제외 목록
+# Vercel 프로젝트 Root Directory = preprocessor/frontend/ 로 설정 필요

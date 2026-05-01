@@ -1,4 +1,4 @@
-FROM python:3.14-rc-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -10,9 +10,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # uv 설치
 RUN pip install --no-cache-dir uv
 
-# 의존성 먼저 설치 (레이어 캐싱 활용)
-COPY pyproject.toml uv.lock* ./
-RUN uv sync --frozen --no-dev
+# 의존성 설치 (lock 없이 pyproject.toml 기준으로 resolve)
+COPY pyproject.toml ./
+RUN uv sync --no-dev
 
 # 앱 코드 복사
 COPY app/ app/
@@ -20,6 +20,8 @@ COPY app/ app/
 # 데이터 디렉터리 초기화
 RUN mkdir -p images user data
 
-EXPOSE 8000
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PORT=8000
+EXPOSE $PORT
 
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT}

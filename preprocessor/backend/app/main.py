@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -8,9 +10,18 @@ from app.api import documents, objects, settings
 
 app = FastAPI(title="Doc Preprocessing Tool", version="1.0.0")
 
+_default_origins = ",".join([
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://localhost:1024",
+    "https://telecom-wiki-agent-kbbr.vercel.app",
+    "https://telecom-wiki-agent.vercel.app",
+])
+_cors_origins = os.environ.get("CORS_ORIGINS", _default_origins).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:1024"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

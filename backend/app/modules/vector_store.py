@@ -8,28 +8,27 @@ from __future__ import annotations
 
 import os
 
-# 로컬 캐시가 있을 때만 오프라인 모드 (Railway 등 클라우드 환경에서는 다운로드 허용)
-# 환경변수로 HF_HUB_OFFLINE=1 을 명시한 경우에만 오프라인 모드 유지
-_offline = os.environ.get("HF_HUB_OFFLINE", "0") == "1"
-if not _offline:
-    os.environ.pop("TRANSFORMERS_OFFLINE", None)
-    os.environ.pop("HF_HUB_OFFLINE", None)
-
-import chromadb
-from chromadb.utils import embedding_functions
-
 from app.config import settings
 from app.modules.chunker import IndexChunk
 
 COLLECTION_NAME = "telecom_docs"
 EMBED_MODEL = "intfloat/multilingual-e5-large"
 
-# 모듈 레벨 싱글톤 — ChromaDB 내부 httpx 클라이언트가 닫히는 것을 방지
-_chroma_client: chromadb.PersistentClient | None = None
+# 싱글톤 — 첫 검색 요청 시 초기화 (lazy)
+_chroma_client = None
 _collection = None
 
 
 def _get_collection():
+    # chromadb와 sentence-transformers는 첫 호출 시에만 import (시작시간 단축)
+    import chromadb  # noqa: PLC0415
+    from chromadb.utils import embedding_functions  # noqa: PLC0415
+
+    # HF 모델 다운로드 허용 (HF_HUB_OFFLINE 환경변수 없을 때)
+    if os.environ.get("HF_HUB_OFFLINE", "0") != "1":
+        os.environ.pop("TRANSFORMERS_OFFLINE", None)
+        os.environ.pop("HF_HUB_OFFLINE", None)
+
     global _chroma_client, _collection
     if _chroma_client is None:
         _chroma_client = chromadb.PersistentClient(path=settings.chroma_path)

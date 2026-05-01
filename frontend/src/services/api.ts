@@ -152,6 +152,16 @@ export const api = {
   reorderChunks: (docId: string, orderedIds: string[]) =>
     client.post(`/chunks/${docId}/reorder`, { ordered_ids: orderedIds }),
 
+  // Settings / API keys
+  listKeys: () =>
+    client.get<Record<string, boolean>>('/settings/keys'),
+
+  saveKey: (service: string, api_key: string) =>
+    client.post('/settings/keys', { service, api_key }),
+
+  validateKey: (service: string) =>
+    client.post<{ valid: boolean }>('/settings/keys/validate', { service }),
+
   tableReview: (docId: string, chunkId: string, provider: string, apiToken: string) =>
     client.post<ParsedChunkInfo>(`/chunks/${docId}/${chunkId}/table/review`, { provider, api_token: apiToken }),
 

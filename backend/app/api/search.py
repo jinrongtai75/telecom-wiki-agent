@@ -17,13 +17,12 @@ router = APIRouter(prefix="/api/search", tags=["search"])
 
 
 def _resolve_token(api_token: str, provider: str, db: Session) -> str:
-    """api_token이 비어 있으면 DB에 저장된 JIHYE 토큰을 폴백으로 사용."""
+    """api_token이 비어 있으면 DB에 저장된 토큰을 폴백으로 사용."""
     if api_token:
         return api_token
-    if provider == "jihye":
-        setting = db.get(AppSetting, "jihye_token")
-        if setting and setting.value:
-            return setting.value
+    setting = db.get(AppSetting, f"{provider}_token")
+    if setting and setting.value:
+        return setting.value
     return api_token
 
 

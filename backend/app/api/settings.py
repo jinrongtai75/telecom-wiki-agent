@@ -15,7 +15,7 @@ from app.security.auth_deps import get_current_user
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
-SUPPORTED_SERVICES = {"jihye"}
+SUPPORTED_SERVICES = {"jihye", "gemini"}
 
 
 class SaveKeyRequest(BaseModel):
@@ -107,6 +107,22 @@ def validate_key(
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=f"JIHYE 게이트웨이 연결 실패: {e}",
+            ) from e
+    elif svc == "gemini":
+        try:
+            resp = httpx.get(
+                f"https://generativelanguage.googleapis.com/v1beta/models?key={setting.value}",
+                timeout=10,
+            )
+            if resp.status_code in (401, 403):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Gemini API 키가 유효하지 않습니다",
+                )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Gemini API 연결 실패: {e}",
             ) from e
 
     return {"valid": True, "service": body.service}

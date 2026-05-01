@@ -269,8 +269,9 @@ export default function PdfViewer({
 
     (async () => {
       try {
+        const apiBase = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
         const loaded = await pdfjsLib.getDocument({
-          url: `http://localhost:8000/api/documents/${docId}/file`,
+          url: `${apiBase}/api/documents/${docId}/file`,
         }).promise;
         if (destroyed) { loaded.destroy(); return; }
 

@@ -139,6 +139,14 @@ export default function SearchPage() {
         </div>
       </header>
 
+      {/* 인증키 미설정 경고 */}
+      {!apiToken && (
+        <div className="bg-yellow-50 border-b border-yellow-200 text-yellow-800 text-xs px-4 py-2 flex items-center gap-2">
+          <span>⚠</span>
+          <span>인증키가 설정되지 않았습니다. 우측 상단 <strong>인증키</strong> 버튼에서 JIHYE 토큰 또는 Gemini API 키를 입력하세요.</span>
+        </div>
+      )}
+
       {/* 메시지 영역 */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.length === 0 && (

@@ -24,7 +24,7 @@ RUN mkdir -p data/chroma data/images data/documents data/markdowns
 ENV HF_HOME=/app/hf_cache
 
 # 임베딩 모델 빌드 시점 사전 다운로드 (런타임 타임아웃 방지)
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('intfloat/multilingual-e5-large')"
+RUN /app/.venv/bin/python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('intfloat/multilingual-e5-large')"
 
 # .venv의 bin 디렉터리를 PATH에 추가
 ENV PATH="/app/.venv/bin:$PATH"

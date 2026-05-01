@@ -7,18 +7,30 @@ import httpx
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
+from app.modules.api_key_manager import APIKeyManager
+
 router = APIRouter(prefix="/api/ingest", tags=["ingest"])
 
 _WIKI_URL = os.environ.get("WIKI_AGENT_URL", "https://telecom-wiki-agent-production.up.railway.app")
 _WIKI_USER = os.environ.get("WIKI_AGENT_USERNAME", "antonio")
-_WIKI_PASS = os.environ.get("WIKI_AGENT_PASSWORD", "")
+_key_mgr = APIKeyManager()
+
+
+def _get_wiki_pass() -> str:
+    return _key_mgr.get_key("WIKI_AGENT_PASSWORD") or os.environ.get("WIKI_AGENT_PASSWORD", "")
 
 
 async def _get_wiki_token() -> str:
+    wiki_pass = _get_wiki_pass()
+    if not wiki_pass:
+        raise HTTPException(
+            status_code=503,
+            detail="Wiki Agent 비밀번호가 설정되지 않았습니다. 설정 패널에서 입력해주세요.",
+        )
     async with httpx.AsyncClient(timeout=30) as client:
         res = await client.post(
             f"{_WIKI_URL}/api/auth/login",
-            json={"username": _WIKI_USER, "password": _WIKI_PASS},
+            json={"username": _WIKI_USER, "password": wiki_pass},
         )
         res.raise_for_status()
     return res.json()["access_token"]
@@ -31,8 +43,8 @@ async def ingest_to_wiki(
     source_name: str = Form(...),
     pdf_file: UploadFile | None = File(None),
 ):
-    if not _WIKI_PASS:
-        raise HTTPException(status_code=503, detail="WIKI_AGENT_PASSWORD 환경변수가 설정되지 않았습니다.")
+    if not _get_wiki_pass():
+        raise HTTPException(status_code=503, detail="Wiki Agent 비밀번호가 설정되지 않았습니다. 설정 패널에서 입력해주세요.")
 
     try:
         token = await _get_wiki_token()

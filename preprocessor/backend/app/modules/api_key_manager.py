@@ -11,17 +11,23 @@ class APIKeyManager:
     def __init__(self):
         load_dotenv(ENV_FILE)
 
+    def _env_var(self, service: str) -> str:
+        svc = service.upper()
+        if svc == "JIHYE":
+            return "JIHYE_TOKEN"
+        if svc == "WIKI_AGENT_PASSWORD":
+            return "WIKI_AGENT_PASSWORD"
+        return f"{svc}_API_KEY"
+
     def save_key(self, service: str, api_key: str) -> None:
         ENV_FILE.touch(exist_ok=True)
-        env_var = "JIHYE_TOKEN" if service.upper() == "JIHYE" else f"{service.upper()}_API_KEY"
+        env_var = self._env_var(service)
         set_key(str(ENV_FILE), env_var, api_key)
         os.environ[env_var] = api_key
 
     def get_key(self, service: str) -> Optional[str]:
         load_dotenv(ENV_FILE, override=True)
-        if service.upper() == "JIHYE":
-            return os.environ.get("JIHYE_TOKEN")
-        return os.environ.get(f"{service.upper()}_API_KEY")
+        return os.environ.get(self._env_var(service))
 
     def validate_key(self, service: str) -> bool:
         key = self.get_key(service)
@@ -31,4 +37,5 @@ class APIKeyManager:
         load_dotenv(ENV_FILE, override=True)
         return {
             "jihye": bool(os.environ.get("JIHYE_TOKEN")),
+            "wiki_agent": bool(os.environ.get("WIKI_AGENT_PASSWORD")),
         }

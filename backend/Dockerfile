@@ -30,7 +30,9 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENV PORT=8001
 EXPOSE $PORT
 
-# uvicorn 직접 실행 — 앱은 즉시 시작, 모델은 첫 검색 시 lazy 로딩
-# exec: uvicorn이 PID 1이 되어 Railway SIGTERM 정상 처리
-# ${PORT:-8001}: Railway가 PORT를 주입하지 않아도 8001로 fallback
-CMD ["/bin/sh", "-c", "exec /app/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8001}"]
+# startup script 복사 후 실행 권한 부여
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
+# start.sh가 PORT 환경변수를 shell에서 직접 치환 (Railway $PORT 주입 호환)
+CMD ["/app/start.sh"]

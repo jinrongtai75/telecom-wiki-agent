@@ -87,30 +87,13 @@ export const exportDocumentContent = async (docId: string, force = false): Promi
   return { content: res.data as string, filename: match ? match[1] : 'document.md' };
 };
 
-// ── Wiki Agent RAG 적재 ───────────────────────────────────────────────────────
-const WIKI_AGENT_URL_KEY = 'wiki_agent_url';
-const WIKI_AGENT_TOKEN_KEY = 'wiki_agent_token';
-
-export const getWikiAgentConfig = () => ({
-  url: sessionStorage.getItem(WIKI_AGENT_URL_KEY) || import.meta.env.VITE_WIKI_AGENT_URL || 'http://localhost:8001',
-  token: sessionStorage.getItem(WIKI_AGENT_TOKEN_KEY) || '',
-});
-
-export const setWikiAgentConfig = (url: string, token: string) => {
-  sessionStorage.setItem(WIKI_AGENT_URL_KEY, url);
-  sessionStorage.setItem(WIKI_AGENT_TOKEN_KEY, token);
-};
-
+// ── Wiki Agent RAG 적재 (전처리 백엔드 프록시 경유) ──────────────────────────
 export const ingestToWikiAgent = async (
   docId: string,
   content: string,
   filename: string,
   sourceName?: string,
 ): Promise<{ doc_id: string; chunk_count: number; has_pdf: boolean }> => {
-  const { url, token } = getWikiAgentConfig();
-  if (!token) throw new Error('Wiki Agent 토큰이 설정되지 않았습니다. 설정 > Wiki Agent 연동을 확인하세요.');
-
-  // 1. preprocessor 백엔드에서 원본 PDF 가져오기 (검색결과 페이지 미리보기용)
   const form = new FormData();
   form.append('filename', filename);
   form.append('content', content);
@@ -122,14 +105,10 @@ export const ingestToWikiAgent = async (
     const pdfBlob = new Blob([pdfRes.data], { type: 'application/pdf' });
     form.append('pdf_file', pdfBlob, pdfName.endsWith('.pdf') ? pdfName : pdfName.replace(/\.[^.]+$/, '.pdf'));
   } catch {
-    // PDF fetch 실패 시 PDF 없이 계속 진행 (MD만 적재)
+    // PDF 없이 계속 진행
   }
 
-  // 2. wiki agent에 multipart 전송
-  const wikiClient = axios.create({ baseURL: url, timeout: 300_000 });
-  const { data } = await wikiClient.post('/api/ingest/md', form, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const { data } = await api.post('/api/ingest/to-wiki', form);
   return data as { doc_id: string; chunk_count: number; has_pdf: boolean };
 };
 

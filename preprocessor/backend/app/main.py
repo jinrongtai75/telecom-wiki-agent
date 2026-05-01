@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
-from app.api import documents, objects, settings
+from app.api import documents, ingest, objects, settings
 
 app = FastAPI(title="Doc Preprocessing Tool", version="1.0.0")
 
@@ -28,6 +28,7 @@ app.add_middleware(
 )
 
 app.include_router(documents.router)
+app.include_router(ingest.router)
 app.include_router(objects.router)
 app.include_router(settings.router)
 

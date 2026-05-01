@@ -20,9 +20,6 @@ COPY app/ app/
 # 데이터 디렉터리 초기화 (볼륨 마운트 전 빈 구조 생성)
 RUN mkdir -p data/chroma data/images data/documents data/markdowns
 
-# ChromaDB ONNX 번들 모델 사전 로딩 (onnxruntime 초기화)
-RUN /app/.venv/bin/python -c "from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2; ONNXMiniLM_L6_V2()"
-
 # .venv의 bin 디렉터리를 PATH에 추가
 ENV PATH="/app/.venv/bin:$PATH"
 

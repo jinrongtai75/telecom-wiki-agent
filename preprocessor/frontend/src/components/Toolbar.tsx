@@ -104,6 +104,7 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
 
   const handleExport = () => {
     if (!docId) return message.warning('문서를 먼저 업로드해주세요');
+    setExportFilename(sourceName ? sourceName.replace(/\.[^.]+$/, '') : '');
     const unconfirmed = objects.filter(
       (o) => (o.type === 'table' || o.type === 'image') && o.confirm_status === 'pending'
     );

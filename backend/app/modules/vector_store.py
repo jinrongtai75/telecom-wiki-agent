@@ -1,32 +1,89 @@
 """
 ChromaDB 벡터 스토어.
-- 임베딩: intfloat/multilingual-e5-large (한국어+영어 최적)
-- 쿼리 시 "query: " 접두사 필수 (e5 모델 스펙)
+- 임베딩: Gemini text-embedding-004 API (키 있으면) / 해시 폴백
+- 로컬 모델/torch/onnxruntime 없음 — Railway 환경 안정성 확보
 - 컬렉션: telecom_docs
 """
 from __future__ import annotations
 
+import hashlib
 import os
+from typing import List
+
+import httpx
+from chromadb import EmbeddingFunction, Documents, Embeddings
 
 from app.config import settings
 from app.modules.chunker import IndexChunk
 
 COLLECTION_NAME = "telecom_docs"
+GEMINI_EMBED_URL = "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:batchEmbedContents"
 
-# 싱글톤 — 첫 검색 요청 시 초기화 (lazy)
 _chroma_client = None
 _collection = None
 
 
+class _GeminiEmbeddingFunction(EmbeddingFunction):
+    """Gemini text-embedding-004 API 기반 임베딩."""
+
+    def __init__(self, api_key: str) -> None:
+        self._key = api_key
+
+    def __call__(self, input: Documents) -> Embeddings:
+        requests_body = {
+            "requests": [
+                {"model": "models/text-embedding-004", "content": {"parts": [{"text": t}]}}
+                for t in input
+            ]
+        }
+        resp = httpx.post(
+            f"{GEMINI_EMBED_URL}?key={self._key}",
+            json=requests_body,
+            timeout=60,
+        )
+        resp.raise_for_status()
+        return [item["values"] for item in resp.json()["embeddings"]]
+
+
+class _HashEmbeddingFunction(EmbeddingFunction):
+    """API 키 없을 때 해시 기반 폴백 (768차원 pseudo-embedding)."""
+
+    DIM = 768
+
+    def __call__(self, input: Documents) -> Embeddings:
+        result: Embeddings = []
+        for text in input:
+            digest = hashlib.sha256(text.encode()).digest()
+            vec = [(b / 127.5) - 1.0 for b in digest]
+            # 768차원 반복 채우기
+            full = (vec * (self.DIM // len(vec) + 1))[: self.DIM]
+            result.append(full)
+        return result
+
+
+def _make_embedding_function() -> EmbeddingFunction:
+    """DB에 저장된 Gemini 키 → 없으면 해시 폴백."""
+    try:
+        from app.database import _get_session_local  # noqa: PLC0415
+        from app.models.db_models import AppSetting  # noqa: PLC0415
+        db = _get_session_local()()
+        setting = db.get(AppSetting, "gemini_token")
+        db.close()
+        if setting and setting.value:
+            return _GeminiEmbeddingFunction(setting.value)
+    except Exception:
+        pass
+    return _HashEmbeddingFunction()
+
+
 def _get_collection():
     import chromadb  # noqa: PLC0415
-    from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2  # noqa: PLC0415
 
     global _chroma_client, _collection
     if _chroma_client is None:
         _chroma_client = chromadb.PersistentClient(path=settings.chroma_path)
     if _collection is None:
-        ef = ONNXMiniLM_L6_V2()  # chromadb 번들 모델 — 별도 다운로드 없음
+        ef = _make_embedding_function()
         _collection = _chroma_client.get_or_create_collection(
             name=COLLECTION_NAME,
             embedding_function=ef,

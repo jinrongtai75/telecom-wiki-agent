@@ -2,7 +2,10 @@ import axios from 'axios';
 import { message } from 'antd';
 import type { DocumentObject, NoisePatterns } from '../types';
 
-const api = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8000' });
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const api = axios.create({ baseURL: BASE_URL });
+// 에러 메시지 없이 조용히 실패하는 내부 요청용
+const silentApi = axios.create({ baseURL: BASE_URL });
 
 api.interceptors.response.use(
   (res) => res,
@@ -111,7 +114,7 @@ export const ingestToWikiAgent = async (
   form.append('source_name', sourceName || filename);
 
   try {
-    const pdfRes = await api.get(`/api/documents/${docId}/file`, { responseType: 'arraybuffer' });
+    const pdfRes = await silentApi.get(`/api/documents/${docId}/file`, { responseType: 'arraybuffer' });
     const pdfName = sourceName || filename;
     const pdfBlob = new Blob([pdfRes.data], { type: 'application/pdf' });
     form.append('pdf_file', pdfBlob, pdfName.endsWith('.pdf') ? pdfName : pdfName.replace(/\.[^.]+$/, '.pdf'));

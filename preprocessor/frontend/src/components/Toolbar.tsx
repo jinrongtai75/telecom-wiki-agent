@@ -140,9 +140,8 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
       const res = await ingestToWikiAgent(docId, content, filename, sourceName);
       setIngestResult({ chunkCount: res.chunk_count });
       message.success(`Wiki Agent RAG 적재 완료 — ${res.chunk_count}개 청크`);
-    } catch (err: unknown) {
-      const msg = (err as { message?: string })?.message || 'RAG 적재 실패';
-      message.error(msg);
+    } catch {
+      // 에러 메시지는 axios 인터셉터에서 이미 표시
     } finally {
       setIngesting(false);
     }

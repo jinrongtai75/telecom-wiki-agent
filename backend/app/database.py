@@ -3,9 +3,9 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.config import settings
 
-# SQLite는 check_same_thread 필요, PostgreSQL은 불필요
+# SQLite는 check_same_thread 필요, PostgreSQL은 connect_timeout 추가
 _is_sqlite = settings.database_url.startswith("sqlite")
-_connect_args = {"check_same_thread": False} if _is_sqlite else {}
+_connect_args = {"check_same_thread": False} if _is_sqlite else {"connect_timeout": 10}
 
 # PostgreSQL URL을 psycopg2 드라이버로 명시 (postgresql:// → postgresql+psycopg2://)
 _db_url = settings.database_url
@@ -13,7 +13,7 @@ if _db_url.startswith("postgresql://") or _db_url.startswith("postgres://"):
     _db_url = _db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
     _db_url = _db_url.replace("postgres://", "postgresql+psycopg2://", 1)
 
-engine = create_engine(_db_url, connect_args=_connect_args)
+engine = create_engine(_db_url, connect_args=_connect_args, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

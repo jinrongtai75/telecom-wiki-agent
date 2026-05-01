@@ -12,7 +12,7 @@ from app.config import settings
 from app.modules.chunker import IndexChunk
 
 COLLECTION_NAME = "telecom_docs"
-EMBED_MODEL = "intfloat/multilingual-e5-large"
+EMBED_MODEL = "intfloat/multilingual-e5-small"
 
 # 싱글톤 — 첫 검색 요청 시 초기화 (lazy)
 _chroma_client = None

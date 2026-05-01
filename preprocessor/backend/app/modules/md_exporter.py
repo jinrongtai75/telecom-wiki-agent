@@ -9,6 +9,20 @@ class MDExporter:
         lines = []
 
         for obj in sorted(document.objects, key=lambda o: o.order):
+            # wiki agent md_chunker가 파싱할 수 있는 메타데이터 주석 삽입
+            meta_parts = [
+                f"obj:{obj.id}",
+                f"type:{obj.type.value}",
+                f"order:{obj.order}",
+                f"confirm:{obj.confirm_status.value}",
+                f"page:{obj.page or 1}",
+            ]
+            if obj.image_path:
+                meta_parts.append(f"image_path:{obj.image_path}")
+            if obj.is_heading:
+                meta_parts.append("is_heading:true")
+            lines.append(f"<!-- {' '.join(meta_parts)} -->")
+
             rendered = self._render_object(obj)
             lines.append(rendered)
             lines.append("")

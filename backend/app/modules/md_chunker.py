@@ -15,9 +15,9 @@ from pathlib import Path
 from app.config import settings
 from app.modules.chunker import IndexChunk, _approx_tokens, _split_text
 
-# <!-- obj:ID type:TYPE page:N --> 패턴
+# <!-- obj:ID type:TYPE ... page:N ... --> 패턴 (order/confirm 필드가 앞에 올 수 있음)
 _OBJ_RE = re.compile(
-    r"<!--\s*obj:(\S+)\s+type:(\S+)\s+page:(\d+)(?:\s+\S+)?\s*-->"
+    r"<!--\s*obj:(\S+)\s+type:(\S+).*?page:(\d+).*?-->"
 )
 # <!-- doc:ID source:NAME ... --> 패턴
 _DOC_RE = re.compile(r"<!--\s*doc:\S+\s+source:\S+")

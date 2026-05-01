@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 router = APIRouter(prefix="/api/ingest", tags=["ingest"])
 
 _WIKI_URL = os.environ.get("WIKI_AGENT_URL", "https://telecom-wiki-agent-production.up.railway.app")
-_WIKI_USER = os.environ.get("WIKI_AGENT_USERNAME", "admin")
+_WIKI_USER = os.environ.get("WIKI_AGENT_USERNAME", "antonio")
 _WIKI_PASS = os.environ.get("WIKI_AGENT_PASSWORD", "")
 
 

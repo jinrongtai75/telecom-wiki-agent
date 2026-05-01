@@ -6,9 +6,20 @@ const api = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? 'http://loca
 
 api.interceptors.response.use(
   (res) => res,
-  (err) => {
-    const detail = err.response?.data?.detail || err.message;
-    message.error(typeof detail === 'string' ? detail : JSON.stringify(detail));
+  async (err) => {
+    let detail: string = err.message;
+    if (err.response?.data instanceof Blob) {
+      try {
+        const text = await (err.response.data as Blob).text();
+        const json = JSON.parse(text);
+        detail = json.detail || json.error?.message || err.message;
+      } catch { /* blob이 JSON이 아닌 경우 */ }
+    } else if (err.response?.data?.detail) {
+      detail = typeof err.response.data.detail === 'string'
+        ? err.response.data.detail
+        : JSON.stringify(err.response.data.detail);
+    }
+    message.error(detail);
     return Promise.reject(err);
   }
 );

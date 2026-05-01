@@ -22,7 +22,7 @@ interface Props {
   onSelectModeChange: (v: boolean) => void;
   summarySelectMode: boolean;
   onSummarySelectModeChange: (v: boolean) => void;
-  onDocLoaded: (docId: string, objects: DocumentObject[], rawContent: string, format: string) => void;
+  onDocLoaded: (docId: string, objects: DocumentObject[], rawContent: string, format: string, name?: string) => void;
   onObjectsUpdated: (objects: DocumentObject[]) => void;
   sourceName?: string;  // 업로드된 원본 파일명
 }
@@ -50,7 +50,7 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
   const handleFileUpload = async (file: File) => {
     await wrap(async () => {
       const res = await uploadDocument(file);
-      onDocLoaded(res.document_id, res.objects, res.raw_content || '', res.format);
+      onDocLoaded(res.document_id, res.objects, res.raw_content || '', res.format, file.name);
       message.success('문서 파싱 완료');
     });
     return false;

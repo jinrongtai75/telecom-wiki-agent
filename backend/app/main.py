@@ -25,6 +25,23 @@ async def lifespan(app: FastAPI):
         logger.info("DB 테이블 초기화 완료")
     except Exception as exc:
         logger.error("DB 테이블 초기화 실패 (앱은 계속 실행): %s", exc)
+
+    reset_pw = os.environ.get("ADMIN_PASSWORD_RESET", "")
+    if reset_pw:
+        try:
+            from app.database import _get_session_local
+            from app.models.db_models import User
+            from app.security.jwt_handler import hash_password
+            db = _get_session_local()()
+            admin = db.query(User).filter(User.is_admin == True).first()  # noqa: E712
+            if admin:
+                admin.hashed_password = hash_password(reset_pw)
+                db.commit()
+                logger.info("관리자 비밀번호 리셋 완료 (ADMIN_PASSWORD_RESET)")
+            db.close()
+        except Exception as exc:
+            logger.error("관리자 비밀번호 리셋 실패: %s", exc)
+
     yield
 
 

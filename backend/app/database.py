@@ -1,20 +1,40 @@
+from __future__ import annotations
+
+import logging
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.config import settings
 
-# SQLite는 check_same_thread 필요, PostgreSQL은 connect_timeout 추가
-_is_sqlite = settings.database_url.startswith("sqlite")
-_connect_args = {"check_same_thread": False} if _is_sqlite else {"connect_timeout": 10}
+logger = logging.getLogger(__name__)
 
-# PostgreSQL URL을 psycopg2 드라이버로 명시 (postgresql:// → postgresql+psycopg2://)
-_db_url = settings.database_url
-if _db_url.startswith("postgresql://") or _db_url.startswith("postgres://"):
-    _db_url = _db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
-    _db_url = _db_url.replace("postgres://", "postgresql+psycopg2://", 1)
+# engine / SessionLocal은 최초 DB 접근 시 생성 (lazy)
+# — create_engine() 자체가 psycopg2를 import하므로
+#   모듈 로드 시점이 아닌 lifespan 이후로 미룸
+_engine = None
+_SessionLocal = None
 
-engine = create_engine(_db_url, connect_args=_connect_args, pool_pre_ping=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def _get_engine():
+    global _engine
+    if _engine is None:
+        url = settings.database_url
+        is_sqlite = url.startswith("sqlite")
+        if url.startswith("postgresql://") or url.startswith("postgres://"):
+            url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
+            url = url.replace("postgres://", "postgresql+psycopg2://", 1)
+        connect_args = {"check_same_thread": False} if is_sqlite else {"connect_timeout": 10}
+        _engine = create_engine(url, connect_args=connect_args, pool_pre_ping=True)
+        logger.info("DB engine created: %s", url.split("@")[-1] if "@" in url else url)
+    return _engine
+
+
+def _get_session_local():
+    global _SessionLocal
+    if _SessionLocal is None:
+        _SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=_get_engine())
+    return _SessionLocal
 
 
 class Base(DeclarativeBase):
@@ -22,7 +42,7 @@ class Base(DeclarativeBase):
 
 
 def get_db():
-    db = SessionLocal()
+    db = _get_session_local()()
     try:
         yield db
     finally:
@@ -31,4 +51,4 @@ def get_db():
 
 def create_tables():
     from app.models import db_models  # noqa: F401
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=_get_engine())

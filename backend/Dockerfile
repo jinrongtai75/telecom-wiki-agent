@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # uv 설치
 RUN pip install --no-cache-dir uv
 
-# 의존성 먼저 설치 (레이어 캐싱 활용)
+# 의존성 먼저 설치 (레이어 캐싱 활용) — cache-bust: 2026-05-01
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 

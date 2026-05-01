@@ -7,7 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.database import create_tables
 from app.services.storage_service import get_storage
 
 logger = logging.getLogger(__name__)
@@ -21,6 +20,7 @@ async def lifespan(app: FastAPI):
                  settings.documents_path, settings.markdowns_path]:
         os.makedirs(path, exist_ok=True)
     try:
+        from app.database import create_tables  # lazy import — psycopg2 이 시점에 로딩
         create_tables()
         logger.info("DB 테이블 초기화 완료")
     except Exception as exc:
@@ -56,7 +56,8 @@ app.include_router(admin_users.router)
 app.include_router(ingest.router)
 app.include_router(settings_api.router)
 
-# 이미지 정적 파일 서빙 (data/images는 Dockerfile에서 생성)
+# 이미지 정적 파일 서빙
+os.makedirs(settings.images_path, exist_ok=True)
 app.mount("/images", StaticFiles(directory=settings.images_path), name="images")
 
 

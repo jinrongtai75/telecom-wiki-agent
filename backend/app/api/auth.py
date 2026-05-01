@@ -57,7 +57,8 @@ class ResetAdminRequest(BaseModel):
     new_password: str
 
 
-\[MASKED_EMAIL]("/reset-admin", status_code=status.HTTP_200_OK)
+@router.post("/reset-admin", status_code=status.HTTP_200_OK)
+
 def reset_admin_password(
     body: ResetAdminRequest,
     db: Session = Depends(get_db),

@@ -1,4 +1,7 @@
+import os
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -47,3 +50,25 @@ def init_admin(req: InitAdminRequest, db: Session = Depends(get_db)):
 
     token = create_access_token(admin.id, is_admin=True)
     return TokenResponse(access_token=token, is_admin=True)
+
+
+class ResetAdminRequest(BaseModel):
+    secret: str
+    new_password: str
+
+
+\[MASKED_EMAIL]("/reset-admin", status_code=status.HTTP_200_OK)
+def reset_admin_password(
+    body: ResetAdminRequest,
+    db: Session = Depends(get_db),
+):
+    """ADMIN_RESET_SECRET 환경변수와 일치하는 secret으로 관리자 비밀번호 초기화."""
+    expected = os.environ.get("ADMIN_RESET_SECRET", "")
+    if not expected or body.secret != expected:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid secret")
+    admin = db.query(User).filter(User.is_admin == True).first()  # noqa: E712
+    if not admin:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admin user not found")
+    admin.hashed_password = hash_password(body.new_password)
+    db.commit()
+    return {"reset": True, "username": admin.username}

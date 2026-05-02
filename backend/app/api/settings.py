@@ -128,7 +128,7 @@ def validate_key(
     return {"valid": True, "service": body.service}
 
 
-\[MASKED_EMAIL]("/vector-store/reset", status_code=status.HTTP_200_OK)
+@router.post("/vector-store/reset", status_code=status.HTTP_200_OK)
 def reset_vector_store(
     current_user: User = Depends(get_current_user),
 ):

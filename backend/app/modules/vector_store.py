@@ -26,35 +26,46 @@ _collection = None
 
 
 MAX_CHARS = 25000   # gemini-embedding-001 안전 입력 한도 (8192 토큰 ≈ 30K chars)
-BATCH_SIZE = 50     # batchEmbedContents 최대 권장 배치 크기
+BATCH_SIZE = 20     # 429 방지를 위해 보수적 배치 크기
+BATCH_DELAY = 1.0   # 배치 간 대기 (초)
 
 
 class _GeminiEmbeddingFunction(EmbeddingFunction):
-    """Gemini gemini-embedding-001 API 기반 임베딩 (배치 처리 + 길이 제한)."""
+    """Gemini gemini-embedding-001 API 기반 임베딩 (배치 처리 + 재시도 + 속도 제한)."""
 
     def __init__(self, api_key: str) -> None:
         self._key = api_key
 
     def _embed_batch(self, texts: list[str]) -> list[list[float]]:
+        import time
         requests_body = {
             "requests": [
                 {"model": f"models/{GEMINI_EMBED_MODEL}", "content": {"parts": [{"text": t[:MAX_CHARS] or " "}]}}
                 for t in texts
             ]
         }
-        resp = httpx.post(
-            f"{GEMINI_EMBED_URL}?key={self._key}",
-            json=requests_body,
-            timeout=120,
-        )
-        resp.raise_for_status()
-        return [item["values"] for item in resp.json()["embeddings"]]
+        for attempt in range(5):
+            resp = httpx.post(
+                f"{GEMINI_EMBED_URL}?key={self._key}",
+                json=requests_body,
+                timeout=120,
+            )
+            if resp.status_code == 429:
+                wait = 2 ** attempt * 5  # 5, 10, 20, 40, 80초
+                time.sleep(wait)
+                continue
+            resp.raise_for_status()
+            return [item["values"] for item in resp.json()["embeddings"]]
+        resp.raise_for_status()  # 5회 모두 실패 시 예외
 
     def __call__(self, input: Documents) -> Embeddings:
+        import time
         results: Embeddings = []
         for i in range(0, len(input), BATCH_SIZE):
             batch = input[i : i + BATCH_SIZE]
             results.extend(self._embed_batch(batch))
+            if i + BATCH_SIZE < len(input):
+                time.sleep(BATCH_DELAY)
         return results
 
 

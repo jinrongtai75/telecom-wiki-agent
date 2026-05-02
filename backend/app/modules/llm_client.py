@@ -24,8 +24,8 @@ def _post_with_retry(url: str, json: dict, timeout: int) -> httpx.Response:
 
 
 class LLMClient:
-    _GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
-    _GEMINI_STREAM_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent"
+    _GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+    _GEMINI_STREAM_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent"
 
     def __init__(self, provider: str = "gemini", api_token: str = ""):
         self.api_token = api_token

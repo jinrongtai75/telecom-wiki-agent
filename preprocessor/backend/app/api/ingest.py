@@ -12,8 +12,11 @@ from app.modules.api_key_manager import APIKeyManager
 router = APIRouter(prefix="/api/ingest", tags=["ingest"])
 
 _WIKI_URL = os.environ.get("WIKI_AGENT_URL", "https://telecom-wiki-agent-production.up.railway.app")
-_WIKI_USER = os.environ.get("WIKI_AGENT_USERNAME", "antonio")
 _key_mgr = APIKeyManager()
+
+
+def _get_wiki_user() -> str:
+    return os.environ.get("WIKI_AGENT_USERNAME", "antonio")
 
 
 def _get_wiki_pass() -> str:
@@ -30,10 +33,30 @@ async def _get_wiki_token() -> str:
     async with httpx.AsyncClient(timeout=30) as client:
         res = await client.post(
             f"{_WIKI_URL}/api/auth/login",
-            json={"username": _WIKI_USER, "password": wiki_pass},
+            json={"username": _get_wiki_user(), "password": wiki_pass},
         )
         res.raise_for_status()
     return res.json()["access_token"]
+
+
+@router.get("/check-wiki-auth")
+async def check_wiki_auth():
+    """Wiki Agent 로그인 진단용 엔드포인트 — 실제 로그인 시도 후 결과 반환."""
+    username = _get_wiki_user()
+    wiki_pass = _get_wiki_pass()
+    if not wiki_pass:
+        return {"ok": False, "username": username, "error": "비밀번호 미설정 (503)"}
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            res = await client.post(
+                f"{_WIKI_URL}/api/auth/login",
+                json={"username": username, "password": wiki_pass},
+            )
+        if res.status_code == 200:
+            return {"ok": True, "username": username, "wiki_url": _WIKI_URL}
+        return {"ok": False, "username": username, "wiki_url": _WIKI_URL, "status": res.status_code, "detail": res.text[:200]}
+    except Exception as e:
+        return {"ok": False, "username": username, "error": str(e)}
 
 
 @router.post("/to-wiki")
@@ -49,7 +72,10 @@ async def ingest_to_wiki(
     try:
         token = await _get_wiki_token()
     except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=502, detail=f"Wiki Agent 로그인 실패: {e.response.status_code}") from e
+        raise HTTPException(
+            status_code=502,
+            detail=f"Wiki Agent 로그인 실패 (username={_get_wiki_user()}, url={_WIKI_URL}, status={e.response.status_code}): {e.response.text[:200]}",
+        ) from e
 
     files: dict = {}
     if pdf_file:

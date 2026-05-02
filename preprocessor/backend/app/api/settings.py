@@ -1,6 +1,8 @@
+import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.modules.api_key_manager import APIKeyManager
+from app.modules.llm_client import _ENDPOINT, _headers
 
 router = APIRouter(prefix='/api/settings', tags=['settings'])
 key_mgr = APIKeyManager()
@@ -27,3 +29,20 @@ async def validate_key(body: ValidateRequest):
     if not valid:
         raise HTTPException(status_code=400, detail='API 키가 유효하지 않습니다. 설정에서 확인해주세요')
     return {'valid': True, 'service': body.service}
+
+
+@router.get('/jihye/ping')
+async def ping_jihye():
+    """JIHYE 게이트웨이 실제 LLM 호출 테스트 (Railway→JIHYE 연결 가능 여부 확인)."""
+    try:
+        resp = httpx.post(
+            _ENDPOINT,
+            headers=_headers(),
+            json={"anthropic_version": "bedrock-2023-05-31", "max_tokens": 5, "messages": [{"role": "user", "content": "hi"}]},
+            timeout=20,
+        )
+        return {"status": resp.status_code, "reachable": resp.status_code < 500, "body_preview": resp.text[:200]}
+    except httpx.TimeoutException:
+        return {"reachable": False, "error": "timeout (20s)"}
+    except Exception as e:
+        return {"reachable": False, "error": str(e)}

@@ -45,8 +45,7 @@ export interface AuthState {
   accessToken: string | null
   isAdmin: boolean
   apiToken: string | null
-  provider: 'jihye' | 'gemini'
-  jihyeToken: string | null
+  provider: 'gemini'
   geminiToken: string | null
 }
 

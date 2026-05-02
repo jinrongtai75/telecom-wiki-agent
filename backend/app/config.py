@@ -8,7 +8,6 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    jihye_gateway_url: str = "https://jihye.ucube.lgudax.cool/api/bedrock/us.anthropic.claude-sonnet-4-6"
     jwt_secret: str = "change-me-in-production-min-32-chars"
     jwt_expire_seconds: int = 3600
 

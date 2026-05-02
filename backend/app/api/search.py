@@ -16,11 +16,11 @@ from app.security.auth_deps import get_current_user
 router = APIRouter(prefix="/api/search", tags=["search"])
 
 
-def _resolve_token(api_token: str, provider: str, db: Session) -> str:
-    """api_token이 비어 있으면 DB에 저장된 토큰을 폴백으로 사용."""
+def _resolve_token(api_token: str, db: Session) -> str:
+    """api_token이 비어 있으면 DB에 저장된 gemini 키를 폴백으로 사용."""
     if api_token:
         return api_token
-    setting = db.get(AppSetting, f"{provider}_token")
+    setting = db.get(AppSetting, "gemini_token")
     if setting and setting.value:
         return setting.value
     return api_token
@@ -32,7 +32,7 @@ def search(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    llm = LLMClient(provider=req.provider, api_token=_resolve_token(req.api_token, req.provider, db))
+    llm = LLMClient(api_token=_resolve_token(req.api_token, db))
 
     # 1. 키워드 추출 (한국어 질문 최적화)
     try:
@@ -113,7 +113,7 @@ def search(
         question=req.question,
         answer=answer_text,
         sources=json.dumps([s.model_dump() for s in sources]),
-        provider=req.provider,
+        provider="gemini",
         relevance_score=top_score,
         from_3gpp=from_3gpp,
     )
@@ -124,7 +124,7 @@ def search(
     return SearchResponse(
         answer=answer_text,
         sources=sources,
-        provider=req.provider,
+        provider="gemini",
         history_id=history.id,
     )
 
@@ -143,7 +143,7 @@ def search_stream(
       data: {"type":"done","data":{"history_id":"..."}}
       data: {"type":"error","data":"..."}
     """
-    llm = LLMClient(provider=req.provider, api_token=_resolve_token(req.api_token, req.provider, db))
+    llm = LLMClient(api_token=_resolve_token(req.api_token, db))
 
     def event_stream():
         # 1. 키워드 추출 + ChromaDB 검색
@@ -221,7 +221,7 @@ def search_stream(
             question=req.question,
             answer=full_answer,
             sources=json.dumps([s.model_dump() for s in sources]),
-            provider=req.provider,
+            provider="gemini",
             relevance_score=top_score,
             from_3gpp=from_3gpp,
         )

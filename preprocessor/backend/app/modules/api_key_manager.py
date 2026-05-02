@@ -13,8 +13,6 @@ class APIKeyManager:
 
     def _env_var(self, service: str) -> str:
         svc = service.upper()
-        if svc == "JIHYE":
-            return "JIHYE_TOKEN"
         if svc == "WIKI_AGENT_PASSWORD":
             return "WIKI_AGENT_PASSWORD"
         return f"{svc}_API_KEY"
@@ -36,6 +34,6 @@ class APIKeyManager:
     def list_services(self) -> dict:
         load_dotenv(ENV_FILE, override=True)
         return {
-            "jihye": bool(os.environ.get("JIHYE_TOKEN")),
+            "gemini": bool(os.environ.get("GEMINI_API_KEY")),
             "wiki_agent": bool(os.environ.get("WIKI_AGENT_PASSWORD")),
         }

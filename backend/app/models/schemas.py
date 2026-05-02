@@ -56,8 +56,8 @@ class TokenResponse(BaseModel):
 # Search
 class SearchRequest(BaseModel):
     question: str
-    provider: str = "jihye"  # "jihye" | "gemini"
-    api_token: str  # JIHYE JWT 토큰 or Gemini API 키
+    provider: str = "gemini"
+    api_token: str = ""  # Gemini API 키 (없으면 DB 저장 키 사용)
 
     @field_validator("question")
     @classmethod
@@ -72,8 +72,8 @@ class SearchRequest(BaseModel):
     @field_validator("provider")
     @classmethod
     def provider_valid(cls, v: str) -> str:
-        if v not in ("jihye", "gemini"):
-            raise ValueError("provider must be 'jihye' or 'gemini'")
+        if v not in ("gemini",):
+            return "gemini"
         return v
 
 
@@ -149,14 +149,12 @@ class ReorderRequest(BaseModel):
 
 
 class VlmRequest(BaseModel):
-    provider: str = "jihye"
-    api_token: str
+    api_token: str = ""  # Gemini API 키 (없으면 DB 저장 키 사용)
 
 
 class ChatEditRequest(BaseModel):
     message: str
-    provider: str = "jihye"
-    api_token: str
+    api_token: str = ""  # Gemini API 키 (없으면 DB 저장 키 사용)
 
 
 # History

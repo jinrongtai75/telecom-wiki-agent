@@ -3,7 +3,7 @@ import { Card, Form, Input, Button, Space, Tag, message } from 'antd';
 import { listKeys, saveKey, validateKey } from '../api/client';
 
 export default function SettingsPanel() {
-  const [jihyeToken, setJihyeToken] = useState('');
+  const [geminiKey, setGeminiKey] = useState('');
   const [wikiPass, setWikiPass] = useState('');
   const [status, setStatus] = useState<Record<string, boolean>>({});
 
@@ -11,12 +11,12 @@ export default function SettingsPanel() {
     listKeys().then(setStatus).catch(() => {});
   }, []);
 
-  const handleSaveJihye = async () => {
-    await saveKey('JIHYE', jihyeToken);
-    message.success('JIHYE 토큰이 저장되었습니다');
+  const handleSaveGemini = async () => {
+    await saveKey('GEMINI', geminiKey);
+    message.success('Gemini API 키가 저장되었습니다');
     const updated = await listKeys();
     setStatus(updated);
-    setJihyeToken('');
+    setGeminiKey('');
   };
 
   const handleSaveWikiPass = async () => {
@@ -29,8 +29,8 @@ export default function SettingsPanel() {
 
   const handleValidate = async () => {
     try {
-      await validateKey('JIHYE');
-      message.success('JIHYE 토큰이 유효합니다');
+      await validateKey('GEMINI');
+      message.success('Gemini API 키가 유효합니다');
     } catch {
       // 에러는 interceptor에서 처리
     }
@@ -42,19 +42,19 @@ export default function SettingsPanel() {
         <Form.Item
           label={
             <Space>
-              JIHYE 게이트웨이 토큰
-              {status.jihye ? <Tag color="green">등록됨</Tag> : <Tag color="red">미등록</Tag>}
+              Gemini API Key
+              {status.gemini ? <Tag color="green">등록됨</Tag> : <Tag color="red">미등록</Tag>}
             </Space>
           }
-          extra="사내 Claude API 게이트웨이 JWT 토큰"
+          extra="LLM 및 임베딩 공용 Google Gemini API 키"
         >
           <Space.Compact style={{ width: '100%' }}>
             <Input.Password
-              value={jihyeToken}
-              onChange={(e) => setJihyeToken(e.target.value)}
-              placeholder="eyJhbGci..."
+              value={geminiKey}
+              onChange={(e) => setGeminiKey(e.target.value)}
+              placeholder="AIza..."
             />
-            <Button onClick={handleSaveJihye} disabled={!jihyeToken}>저장</Button>
+            <Button onClick={handleSaveGemini} disabled={!geminiKey}>저장</Button>
             <Button onClick={handleValidate}>검증</Button>
           </Space.Compact>
         </Form.Item>

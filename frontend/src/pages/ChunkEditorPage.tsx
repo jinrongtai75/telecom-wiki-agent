@@ -24,7 +24,7 @@ import ChunkCard from '../components/ChunkCard'
 export default function ChunkEditorPage() {
   const { docId } = useParams<{ docId: string }>()
   const navigate = useNavigate()
-  const { provider, apiToken } = useAuth()
+  const { apiToken } = useAuth()
 
   const [chunks, setChunks] = useState<ParsedChunkInfo[]>([])
   const [loading, setLoading] = useState(true)
@@ -163,16 +163,13 @@ export default function ChunkEditorPage() {
   }
 
   const handleIndex = async () => {
-    if (!docId || !apiToken) {
-      setIndexMsg('❌ API 토큰이 없습니다. 토큰 페이지에서 설정해주세요.')
-      return
-    }
+    if (!docId) return
     setIndexing(true)
     setIndexMsg('요약 생성 중...')
     try {
       // 1. 요약 자동 생성 (실패해도 계속 진행)
       try {
-        await api.summarizeDocument(docId, provider, apiToken)
+        await api.summarizeDocument(docId, apiToken ?? '')
         const r = await api.getChunks(docId)
         setChunks(r.data)
       } catch (sumErr: unknown) {
@@ -184,7 +181,7 @@ export default function ChunkEditorPage() {
 
       // 2. MD 저장 + ChromaDB 인덱싱
       setIndexMsg((prev) => prev.startsWith('⚠️') ? prev.replace('계속 진행 중...', '→ DB 저장 중...') : 'DB 저장 중...')
-      await api.indexDocument(docId, provider, apiToken)
+      await api.indexDocument(docId, apiToken ?? '')
       setMdSaved(true)
       setIndexMsg('✅ DB 저장 완료!')
     } catch (err: unknown) {
@@ -247,9 +244,9 @@ export default function ChunkEditorPage() {
         </button>
         <button
           onClick={handleIndex}
-          disabled={indexing || reparsing || !apiToken}
+          disabled={indexing || reparsing}
           className="text-xs bg-lgu-pink text-white px-3 py-1.5 rounded hover:opacity-90 disabled:opacity-50 font-medium"
-          title={!apiToken ? 'API 토큰 필요' : '요약 생성 후 DB에 저장'}
+          title="요약 생성 후 DB에 저장"
         >
           {indexing ? '저장 중...' : 'DB저장'}
         </button>

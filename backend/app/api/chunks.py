@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
-from app.models.db_models import ParsedChunkDB, User
+from app.models.db_models import AppSetting, ParsedChunkDB, User
 from app.models.schemas import (
     ChatEditRequest,
     ChunkInfo,
@@ -25,6 +25,15 @@ from app.models.schemas import (
 )
 from app.modules.llm_client import LLMClient
 from app.security.auth_deps import require_admin
+
+
+def _get_llm(api_token: str, db: Session) -> LLMClient:
+    token = api_token
+    if not token:
+        setting = db.get(AppSetting, "gemini_token")
+        if setting and setting.value:
+            token = setting.value
+    return LLMClient(api_token=token)
 
 router = APIRouter(prefix="/api/chunks", tags=["chunks"])
 
@@ -191,7 +200,7 @@ def table_review(
 ):
     c = _get_chunk_or_404(doc_id, chunk_id, db)
     effective = c.processed_content or c.content
-    llm = LLMClient(provider=body.provider, api_token=body.api_token)
+    llm = _get_llm(body.api_token, db)
     try:
         raw = llm.complete(TABLE_REVIEW_PROMPT + effective)
         data = _parse_json_response(raw)
@@ -218,7 +227,7 @@ def table_flatten(
 ):
     c = _get_chunk_or_404(doc_id, chunk_id, db)
     effective = c.processed_content or c.content
-    llm = LLMClient(provider=body.provider, api_token=body.api_token)
+    llm = _get_llm(body.api_token, db)
     try:
         result = llm.complete(TABLE_FLATTEN_PROMPT + effective)
         c.processed_content = result.strip()
@@ -240,7 +249,7 @@ def table_chat(
 ):
     c = _get_chunk_or_404(doc_id, chunk_id, db)
     effective = c.processed_content or c.content
-    llm = LLMClient(provider=body.provider, api_token=body.api_token)
+    llm = _get_llm(body.api_token, db)
     prompt = (
         f"다음 마크다운 표를 편집 요청에 따라 수정하세요. 수정된 표만 출력하세요.\n\n"
         f"표:\n{effective}\n\n요청: {body.message}"
@@ -269,7 +278,7 @@ def image_review(
     if not c.image_b64:
         raise HTTPException(status_code=400, detail="이미지 데이터 없음")
 
-    llm = LLMClient(provider=body.provider, api_token=body.api_token)
+    llm = _get_llm(body.api_token, db)
     try:
         raw = llm.complete_with_image(IMAGE_REVIEW_PROMPT, c.image_b64)
         data = _parse_json_response(raw)
@@ -317,7 +326,7 @@ def image_chat(
 ):
     c = _get_chunk_or_404(doc_id, chunk_id, db)
     effective = c.processed_content or c.content or ""
-    llm = LLMClient(provider=body.provider, api_token=body.api_token)
+    llm = _get_llm(body.api_token, db)
     prompt = (
         f"이미지 설명을 편집 요청에 따라 수정하세요. 수정된 설명만 출력하세요.\n\n"
         f"현재 설명:\n{effective}\n\n요청: {body.message}"

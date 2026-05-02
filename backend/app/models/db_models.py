@@ -50,7 +50,7 @@ class ChatHistory(Base):
     question: Mapped[str] = mapped_column(Text, nullable=False)
     answer: Mapped[str] = mapped_column(Text, nullable=False)
     sources: Mapped[str] = mapped_column(Text, default="[]")  # JSON 문자열
-    provider: Mapped[str] = mapped_column(String(20), default="jihye")
+    provider: Mapped[str] = mapped_column(String(20), default="gemini")
     relevance_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     from_3gpp: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
@@ -68,7 +68,7 @@ class Feedback(Base):
 
 
 class AppSetting(Base):
-    """앱 설정 키-값 저장소 (예: JIHYE 토큰 등)."""
+    """앱 설정 키-값 저장소 (예: Gemini API 키 등)."""
 
     __tablename__ = "app_settings"
 

@@ -16,7 +16,7 @@ interface Message {
 }
 
 export default function SearchPage() {
-  const { provider, apiToken, isAdmin, logout } = useAuth()
+  const { apiToken, isAdmin, logout } = useAuth()
   const navigate = useNavigate()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -54,7 +54,7 @@ export default function SearchPage() {
     setMessages((m) => [...m, userMsg, assistantMsg])
     setLoading(true)
 
-    const stop = searchStream(question, provider, apiToken ?? '', (event) => {
+    const stop = searchStream(question, 'gemini', apiToken ?? '', (event) => {
       if (event.type === 'sources') {
         setMessages((m) =>
           m.map((msg) =>
@@ -112,7 +112,7 @@ export default function SearchPage() {
       <header className="bg-lgu-dark text-white px-4 py-3 flex items-center justify-between">
         <div>
           <h1 className="font-bold text-sm">무선통신프로토콜 위키백과사전</h1>
-          <p className="text-xs text-gray-400">{provider === 'jihye' ? 'JIHYE Gateway' : 'Google Gemini'}</p>
+          <p className="text-xs text-gray-400">Google Gemini</p>
         </div>
         <div className="flex items-center gap-3">
           {isAdmin && (
@@ -143,7 +143,7 @@ export default function SearchPage() {
       {!apiToken && (
         <div className="bg-yellow-50 border-b border-yellow-200 text-yellow-800 text-xs px-4 py-2 flex items-center gap-2">
           <span>⚠</span>
-          <span>인증키가 설정되지 않았습니다. 우측 상단 <strong>인증키</strong> 버튼에서 JIHYE 토큰 또는 Gemini API 키를 입력하세요.</span>
+          <span>Gemini API 키가 설정되지 않았습니다. 우측 상단 <strong>API 키</strong> 버튼에서 입력하거나 관리자에게 문의하세요.</span>
         </div>
       )}
 

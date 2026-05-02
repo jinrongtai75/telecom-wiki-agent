@@ -1,25 +1,22 @@
 """
-앱 설정 API — API 키 관리 (JIHYE 게이트웨이 토큰 등).
-preprocessor 백엔드의 /api/settings/keys 와 동일한 인터페이스를 제공하여
-두 서비스 간 토큰 공유를 지원합니다.
+앱 설정 API — API 키 관리 (Gemini API 키 등).
 """
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.config import settings as app_settings
 from app.database import get_db
 from app.models.db_models import AppSetting, User
 from app.security.auth_deps import get_current_user
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
-SUPPORTED_SERVICES = {"jihye", "gemini"}
+SUPPORTED_SERVICES = {"gemini"}
 
 
 class SaveKeyRequest(BaseModel):
-    service: str    # "JIHYE"
+    service: str    # "GEMINI"
     api_key: str
 
 
@@ -82,33 +79,7 @@ def validate_key(
             detail="키가 등록되지 않았습니다",
         )
 
-    if svc == "jihye":
-        try:
-            resp = httpx.post(
-                app_settings.jihye_gateway_url,
-                headers={
-                    "Authorization": f"Bearer {setting.value}",
-                    "anthropic-version": "bedrock-2023-05-31",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "anthropic_version": "bedrock-2023-05-31",
-                    "max_tokens": 5,
-                    "messages": [{"role": "user", "content": "hi"}],
-                },
-                timeout=15,
-            )
-            if resp.status_code == 401:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="JIHYE 토큰이 유효하지 않습니다",
-                )
-        except httpx.RequestError as e:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"JIHYE 게이트웨이 연결 실패: {e}",
-            ) from e
-    elif svc == "gemini":
+    if svc == "gemini":
         try:
             resp = httpx.get(
                 f"https://generativelanguage.googleapis.com/v1beta/models?key={setting.value}",

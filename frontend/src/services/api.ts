@@ -90,8 +90,8 @@ export const api = {
     client.delete(`/admin/users/${id}`),
 
   // Search
-  search: (question: string, provider: string, apiToken: string) =>
-    client.post<SearchResponse>('/search', { question, provider, api_token: apiToken }),
+  search: (question: string, apiToken = '') =>
+    client.post<SearchResponse>('/search', { question, provider: 'gemini', api_token: apiToken }),
 
   // History
   getHistory: (limit = 50) =>
@@ -121,14 +121,14 @@ export const api = {
   deleteDocument: (id: string) =>
     client.delete(`/documents/${id}`),
 
-  indexDocument: (docId: string, provider: string, apiToken: string) =>
-    client.post<DocumentMeta>(`/documents/${docId}/index`, { provider, api_token: apiToken }, { timeout: 600_000 }),  // 10분 (임베딩 모델 로딩 포함)
+  indexDocument: (docId: string, apiToken = '') =>
+    client.post<DocumentMeta>(`/documents/${docId}/index`, { api_token: apiToken }, { timeout: 600_000 }),
 
   reparseDocument: (docId: string) =>
     client.post<DocumentMeta>(`/documents/${docId}/reparse`),
 
-  summarizeDocument: (docId: string, provider: string, apiToken: string) =>
-    client.post<{ inserted: number }>(`/documents/${docId}/summarize`, { provider, api_token: apiToken }, { timeout: 300_000 }),  // 5분 (LLM 호출 多)
+  summarizeDocument: (docId: string, apiToken = '') =>
+    client.post<{ inserted: number }>(`/documents/${docId}/summarize`, { api_token: apiToken }, { timeout: 300_000 }),
 
   getNoiseCandidates: (docId: string, customPatterns?: string[]) =>
     client.post<{ candidates: NoiseCandidateItem[] }>(`/documents/${docId}/noise/candidates`, customPatterns ?? []),
@@ -162,18 +162,18 @@ export const api = {
   validateKey: (service: string) =>
     client.post<{ valid: boolean }>('/settings/keys/validate', { service }),
 
-  tableReview: (docId: string, chunkId: string, provider: string, apiToken: string) =>
-    client.post<ParsedChunkInfo>(`/chunks/${docId}/${chunkId}/table/review`, { provider, api_token: apiToken }),
+  tableReview: (docId: string, chunkId: string, apiToken = '') =>
+    client.post<ParsedChunkInfo>(`/chunks/${docId}/${chunkId}/table/review`, { api_token: apiToken }),
 
-  tableFlatten: (docId: string, chunkId: string, provider: string, apiToken: string) =>
-    client.post<ParsedChunkInfo>(`/chunks/${docId}/${chunkId}/table/flatten`, { provider, api_token: apiToken }),
+  tableFlatten: (docId: string, chunkId: string, apiToken = '') =>
+    client.post<ParsedChunkInfo>(`/chunks/${docId}/${chunkId}/table/flatten`, { api_token: apiToken }),
 
-  tableChat: (docId: string, chunkId: string, message: string, provider: string, apiToken: string) =>
-    client.post<ParsedChunkInfo>(`/chunks/${docId}/${chunkId}/table/chat`, { message, provider, api_token: apiToken }),
+  tableChat: (docId: string, chunkId: string, message: string, apiToken = '') =>
+    client.post<ParsedChunkInfo>(`/chunks/${docId}/${chunkId}/table/chat`, { message, api_token: apiToken }),
 
-  imageReview: (docId: string, chunkId: string, provider: string, apiToken: string) =>
-    client.post<ParsedChunkInfo>(`/chunks/${docId}/${chunkId}/image/review`, { provider, api_token: apiToken }),
+  imageReview: (docId: string, chunkId: string, apiToken = '') =>
+    client.post<ParsedChunkInfo>(`/chunks/${docId}/${chunkId}/image/review`, { api_token: apiToken }),
 
-  imageChat: (docId: string, chunkId: string, message: string, provider: string, apiToken: string) =>
-    client.post<ParsedChunkInfo>(`/chunks/${docId}/${chunkId}/image/chat`, { message, provider, api_token: apiToken }),
+  imageChat: (docId: string, chunkId: string, message: string, apiToken = '') =>
+    client.post<ParsedChunkInfo>(`/chunks/${docId}/${chunkId}/image/chat`, { message, api_token: apiToken }),
 }

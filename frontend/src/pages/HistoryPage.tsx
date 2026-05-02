@@ -80,7 +80,7 @@ export default function HistoryPage() {
                   <span className="text-xs text-gray-400">
                     {new Date(item.created_at).toLocaleDateString('ko-KR')}
                   </span>
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${item.provider === 'jihye' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">
                     {item.provider}
                   </span>
                 </div>

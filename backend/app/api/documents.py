@@ -7,7 +7,7 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.db_models import Document, ParsedChunkDB, User
+from app.models.db_models import AppSetting, Document, ParsedChunkDB, User
 from app.models.schemas import (
     DocumentMeta,
     NoiseCandidateItem,
@@ -28,6 +28,15 @@ from app.services.storage_service import get_storage
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
+
+
+def _get_llm(api_token: str, db: Session) -> LLMClient:
+    token = api_token
+    if not token:
+        setting = db.get(AppSetting, "gemini_token")
+        if setting and setting.value:
+            token = setting.value
+    return LLMClient(api_token=token)
 ALLOWED_MIME = {"application/pdf"}
 
 @router.post("", response_model=DocumentMeta, status_code=status.HTTP_201_CREATED)
@@ -150,8 +159,8 @@ def index_document(
         parsed.append(chunk)
 
     try:
-        if body.api_token:
-            llm = LLMClient(provider=body.provider, api_token=body.api_token)
+        llm = _get_llm(body.api_token, db)
+        if llm.api_token:
             result: list[pdf_parser.ParsedChunk] = []
             for chunk in parsed:
                 if chunk.type == ChunkType.IMAGE and chunk.image_b64 and not chunk.content:
@@ -405,7 +414,7 @@ def summarize_document(
     )
 
     try:
-        llm = LLMClient(provider=body.provider, api_token=body.api_token)
+        llm = _get_llm(body.api_token, db)
         inserted = summary_generator.generate_for_doc(db_chunks, llm, db, doc_id)
     except Exception as e:
         raise HTTPException(

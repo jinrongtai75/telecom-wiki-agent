@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function ChunkCard({ chunk, docId, onUpdate, onDelete, onPageClick, onSelect, isSelected }: Props) {
-  const { provider, apiToken } = useAuth()
+  const { apiToken } = useAuth()
   const [editing, setEditing] = useState(false)
   const [editText, setEditText] = useState('')
   const [chatMsg, setChatMsg] = useState('')
@@ -88,10 +88,9 @@ export default function ChunkCard({ chunk, docId, onUpdate, onDelete, onPageClic
 
   // TABLE actions
   const handleTableReview = async () => {
-    if (!apiToken) return
     setBusy(true)
     try {
-      const res = await api.tableReview(docId, chunk.id, provider, apiToken)
+      const res = await api.tableReview(docId, chunk.id, apiToken ?? '')
       onUpdate(res.data)
     } finally {
       setBusy(false)
@@ -99,10 +98,9 @@ export default function ChunkCard({ chunk, docId, onUpdate, onDelete, onPageClic
   }
 
   const handleTableFlatten = async () => {
-    if (!apiToken) return
     setBusy(true)
     try {
-      const res = await api.tableFlatten(docId, chunk.id, provider, apiToken)
+      const res = await api.tableFlatten(docId, chunk.id, apiToken ?? '')
       onUpdate(res.data)
     } finally {
       setBusy(false)
@@ -110,10 +108,10 @@ export default function ChunkCard({ chunk, docId, onUpdate, onDelete, onPageClic
   }
 
   const handleTableChat = async () => {
-    if (!apiToken || !chatMsg.trim()) return
+    if (!chatMsg.trim()) return
     setBusy(true)
     try {
-      const res = await api.tableChat(docId, chunk.id, chatMsg, provider, apiToken)
+      const res = await api.tableChat(docId, chunk.id, chatMsg, apiToken ?? '')
       onUpdate(res.data)
       setChatMsg('')
       setShowChat(false)
@@ -124,10 +122,9 @@ export default function ChunkCard({ chunk, docId, onUpdate, onDelete, onPageClic
 
   // IMAGE actions
   const handleImageReview = async () => {
-    if (!apiToken) return
     setBusy(true)
     try {
-      const res = await api.imageReview(docId, chunk.id, provider, apiToken)
+      const res = await api.imageReview(docId, chunk.id, apiToken ?? '')
       onUpdate(res.data)
     } finally {
       setBusy(false)
@@ -135,10 +132,10 @@ export default function ChunkCard({ chunk, docId, onUpdate, onDelete, onPageClic
   }
 
   const handleImageChat = async () => {
-    if (!apiToken || !chatMsg.trim()) return
+    if (!chatMsg.trim()) return
     setBusy(true)
     try {
-      const res = await api.imageChat(docId, chunk.id, chatMsg, provider, apiToken)
+      const res = await api.imageChat(docId, chunk.id, chatMsg, apiToken ?? '')
       onUpdate(res.data)
       setChatMsg('')
       setShowChat(false)
@@ -305,14 +302,14 @@ export default function ChunkCard({ chunk, docId, onUpdate, onDelete, onPageClic
             <div className="flex gap-2 mb-2 flex-wrap">
               <button
                 onClick={handleTableReview}
-                disabled={busy || !apiToken}
+                disabled={busy}
                 className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 disabled:opacity-40"
               >
                 VLM 검수
               </button>
               <button
                 onClick={handleTableFlatten}
-                disabled={busy || !apiToken}
+                disabled={busy}
                 className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 disabled:opacity-40"
               >
                 평탄화
@@ -372,7 +369,7 @@ export default function ChunkCard({ chunk, docId, onUpdate, onDelete, onPageClic
             <div className="flex gap-2 mb-2 flex-wrap">
               <button
                 onClick={handleImageReview}
-                disabled={busy || !apiToken || !chunk.image_b64}
+                disabled={busy || !chunk.image_b64}
                 className="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded hover:bg-purple-100 disabled:opacity-40"
               >
                 VLM 검수

@@ -176,7 +176,7 @@ export default memo(function ObjectBox({ docId, obj, onUpdate, onDelete }: Props
               <TableEditor docId={docId} obj={obj} onUpdate={update} />
             )}
             {obj.type === 'image' && (
-              <ImageEditor docId={docId} obj={obj} onUpdate={update} onDelete={onDelete} />
+              <ImageEditor docId={docId} obj={obj} onUpdate={update} />
             )}
           </div>
         )}

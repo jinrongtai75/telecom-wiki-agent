@@ -4,9 +4,23 @@ LLM/VLM 클라이언트 — Google Gemini API 전용.
 """
 from __future__ import annotations
 
+import time
 from collections.abc import Iterator
 
 import httpx
+
+
+def _post_with_retry(url: str, json: dict, timeout: int) -> httpx.Response:
+    """429 발생 시 지수 백오프로 최대 5회 재시도."""
+    for attempt in range(5):
+        resp = httpx.post(url, json=json, timeout=timeout)
+        if resp.status_code != 429:
+            resp.raise_for_status()
+            return resp
+        wait = 2 ** attempt * 5  # 5, 10, 20, 40, 80초
+        time.sleep(wait)
+    resp.raise_for_status()
+    return resp
 
 
 class LLMClient:
@@ -22,12 +36,11 @@ class LLMClient:
             "contents": [{"parts": [{"text": full_prompt}]}],
             "generationConfig": {"maxOutputTokens": max_tokens},
         }
-        resp = httpx.post(
+        resp = _post_with_retry(
             f"{self._GEMINI_URL}?key={self.api_token}",
             json=body,
             timeout=60,
         )
-        resp.raise_for_status()
         data = resp.json()
         return data["candidates"][0]["content"]["parts"][0]["text"].strip()
 
@@ -87,11 +100,10 @@ class LLMClient:
             ],
             "generationConfig": {"maxOutputTokens": max_tokens},
         }
-        resp = httpx.post(
+        resp = _post_with_retry(
             f"{self._GEMINI_URL}?key={self.api_token}",
             json=body,
             timeout=60,
         )
-        resp.raise_for_status()
         data = resp.json()
         return data["candidates"][0]["content"]["parts"][0]["text"].strip()

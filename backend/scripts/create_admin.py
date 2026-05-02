@@ -23,12 +23,10 @@ def create_admin(username: str, password: str) -> None:
     try:
         existing = db.query(User).filter(User.username == username).first()
         if existing:
-            if existing.is_admin:
-                print(f"✅ 관리자 계정 '{username}'이 이미 존재합니다.")
-            else:
-                existing.is_admin = True
-                db.commit()
-                print(f"✅ '{username}' 계정을 관리자로 승격했습니다.")
+            existing.is_admin = True
+            existing.hashed_password = hash_password(password)
+            db.commit()
+            print(f"✅ 관리자 계정 '{username}' 비밀번호 업데이트 완료.")
             return
 
         admin = User(
@@ -45,8 +43,8 @@ def create_admin(username: str, password: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="관리자 계정 생성")
-    parser.add_argument("--username", default="admin", help="관리자 아이디 (기본: admin)")
-    parser.add_argument("--password", default=None, help="패스워드 (미입력 시 대화형 입력)")
+    parser.add_argument("--username", default="antonio", help="관리자 아이디 (기본: antonio)")
+    parser.add_argument("--password", default="Lguplus2026", help="패스워드 (미입력 시 대화형 입력)")
     args = parser.parse_args()
 
     password = args.password

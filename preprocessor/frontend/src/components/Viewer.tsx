@@ -33,7 +33,7 @@ interface Props {
 // ── HTML 원본 문서 렌더링 (rawContent 변경 시에만 리렌더) ─────────────────────
 const HtmlContent = memo(({ html, contentRef, onClick }: {
   html: string;
-  contentRef: React.RefObject<HTMLDivElement>;
+  contentRef: React.RefObject<HTMLDivElement | null>;
   onClick: (e: React.MouseEvent<HTMLDivElement>) => void;
 }) => (
   <div
@@ -112,9 +112,9 @@ export default function Viewer({ docId, format, rawContent, objects, selectMode,
   const [deleteCheckedIds, setDeleteCheckedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const objRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const leftScrollRef = useRef<HTMLDivElement>(null);
-  const rightScrollRef = useRef<HTMLDivElement>(null);
-  const htmlContentRef = useRef<HTMLDivElement>(null);
+  const leftScrollRef = useRef<HTMLDivElement | null>(null);
+  const rightScrollRef = useRef<HTMLDivElement | null>(null);
+  const htmlContentRef = useRef<HTMLDivElement | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 3 } }));
 

@@ -73,12 +73,10 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
 
   const handleDenoise = async () => {
     if (!docId) return message.warning('문서를 먼저 업로드해주세요');
-    const contains = containsInput.trim() ? [containsInput.trim()] : [];
-    if (checkedIds.size === 0 && contains.length === 0) return message.warning('제거할 항목을 선택하거나 텍스트를 입력해주세요');
+    if (checkedIds.size === 0) return message.warning('제거할 항목을 선택해주세요');
     await wrap(async () => {
       const res = await denoise(docId, {
         delete_ids: [...checkedIds],
-        patterns: contains.length > 0 ? { header_patterns: [], footer_patterns: [], page_number_patterns: [], contains_patterns: contains } : undefined,
       });
       onObjectsUpdated(res.objects);
       setNoiseCandidates([]);

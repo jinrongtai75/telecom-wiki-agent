@@ -92,7 +92,7 @@ export default function SearchPage() {
     })
 
     stopRef.current = stop
-  }, [input, loading, apiToken, provider])
+  }, [input, loading, apiToken])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

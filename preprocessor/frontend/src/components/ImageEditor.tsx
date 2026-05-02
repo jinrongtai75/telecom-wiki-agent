@@ -8,10 +8,9 @@ interface Props {
   docId: string;
   obj: DocumentObject;
   onUpdate: (updated: Partial<DocumentObject>) => void;
-  onDelete?: (objects: DocumentObject[]) => void;
 }
 
-export default function ImageEditor({ docId, obj, onUpdate, onDelete }: Props) {
+export default function ImageEditor({ docId, obj, onUpdate }: Props) {
   const [mode, setMode] = useState<'link' | 'vlm'>('link');
   const [linkText, setLinkText] = useState('');
   const [content, setContent] = useState(obj.processed_content || '');
@@ -33,8 +32,8 @@ export default function ImageEditor({ docId, obj, onUpdate, onDelete }: Props) {
     setLoading(true);
     try {
       const res = await interpretImage(docId, obj.id);
-      setContent(res.processed_content);
-      onUpdate({ processed_content: res.processed_content, image_path: res.image_path });
+      setContent(res.processed_content || '');
+      onUpdate({ processed_content: res.processed_content, image_path: res.image_path || undefined });
     } finally {
       setLoading(false);
     }

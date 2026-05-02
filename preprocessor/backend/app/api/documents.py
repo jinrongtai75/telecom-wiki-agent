@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from typing import Optional, List
+from urllib.parse import quote
 from fastapi import APIRouter, UploadFile, File, HTTPException, Body
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -269,7 +270,7 @@ async def export_document(
     return Response(
         content=md_content.encode("utf-8"),
         media_type="text/markdown; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="{out_filename}"'},
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(out_filename)}"},
     )
 
 

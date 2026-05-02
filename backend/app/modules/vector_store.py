@@ -17,14 +17,16 @@ from app.config import settings
 from app.modules.chunker import IndexChunk
 
 COLLECTION_NAME = "telecom_docs"
-GEMINI_EMBED_URL = "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:batchEmbedContents"
+GEMINI_EMBED_MODEL = "gemini-embedding-001"
+GEMINI_EMBED_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_EMBED_MODEL}:batchEmbedContents"
+EMBED_DIM = 3072  # gemini-embedding-001 차원
 
 _chroma_client = None
 _collection = None
 
 
 class _GeminiEmbeddingFunction(EmbeddingFunction):
-    """Gemini text-embedding-004 API 기반 임베딩."""
+    """Gemini gemini-embedding-001 API 기반 임베딩."""
 
     def __init__(self, api_key: str) -> None:
         self._key = api_key
@@ -32,7 +34,7 @@ class _GeminiEmbeddingFunction(EmbeddingFunction):
     def __call__(self, input: Documents) -> Embeddings:
         requests_body = {
             "requests": [
-                {"model": "models/text-embedding-004", "content": {"parts": [{"text": t}]}}
+                {"model": f"models/{GEMINI_EMBED_MODEL}", "content": {"parts": [{"text": t}]}}
                 for t in input
             ]
         }
@@ -46,9 +48,9 @@ class _GeminiEmbeddingFunction(EmbeddingFunction):
 
 
 class _HashEmbeddingFunction(EmbeddingFunction):
-    """API 키 없을 때 해시 기반 폴백 (768차원 pseudo-embedding)."""
+    """API 키 없을 때 해시 기반 폴백 (3072차원 pseudo-embedding)."""
 
-    DIM = 768
+    DIM = EMBED_DIM
 
     def __call__(self, input: Documents) -> Embeddings:
         result: Embeddings = []
@@ -76,13 +78,19 @@ def _make_embedding_function() -> EmbeddingFunction:
     return _HashEmbeddingFunction()
 
 
-def _get_collection():
+def _get_collection(force_reset: bool = False):
     import chromadb  # noqa: PLC0415
 
     global _chroma_client, _collection
     if _chroma_client is None:
         _chroma_client = chromadb.PersistentClient(path=settings.chroma_path)
-    if _collection is None:
+    if _collection is None or force_reset:
+        if force_reset and _chroma_client:
+            try:
+                _chroma_client.delete_collection(COLLECTION_NAME)
+            except Exception:
+                pass
+        _collection = None
         ef = _make_embedding_function()
         _collection = _chroma_client.get_or_create_collection(
             name=COLLECTION_NAME,
@@ -90,6 +98,14 @@ def _get_collection():
             metadata={"hnsw:space": "cosine"},
         )
     return _collection
+
+
+def reset_collection() -> dict:
+    """ChromaDB 컬렉션 삭제 후 재생성 (차원 변경 시 사용)."""
+    global _collection
+    _collection = None
+    _get_collection(force_reset=True)
+    return {"reset": True, "collection": COLLECTION_NAME}
 
 
 def index_chunks(chunks: list[IndexChunk]) -> int:
@@ -113,7 +129,16 @@ def index_chunks(chunks: list[IndexChunk]) -> int:
         for c in chunks
     ]
 
-    collection.upsert(ids=ids, documents=documents, metadatas=metadatas)
+    try:
+        collection.upsert(ids=ids, documents=documents, metadatas=metadatas)
+    except Exception as e:
+        err = str(e).lower()
+        if any(kw in err for kw in ("dimension", "size", "shape", "embedding")):
+            # 차원 미스매치 — 컬렉션 리셋 후 재시도
+            collection = _get_collection(force_reset=True)
+            collection.upsert(ids=ids, documents=documents, metadatas=metadatas)
+        else:
+            raise
     return len(chunks)
 
 

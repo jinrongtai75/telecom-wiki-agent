@@ -126,3 +126,14 @@ def validate_key(
             ) from e
 
     return {"valid": True, "service": body.service}
+
+
+\[MASKED_EMAIL]("/vector-store/reset", status_code=status.HTTP_200_OK)
+def reset_vector_store(
+    current_user: User = Depends(get_current_user),
+):
+    """ChromaDB 컬렉션 초기화 (관리자 전용). 임베딩 모델 변경 후 사용."""
+    if not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="관리자만 실행 가능합니다")
+    from app.modules import vector_store  # noqa: PLC0415
+    return vector_store.reset_collection()

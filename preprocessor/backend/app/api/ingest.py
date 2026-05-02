@@ -70,6 +70,24 @@ async def check_wiki_auth():
         return {"ok": False, "username": username, "error": str(e), "diag": diag}
 
 
+@router.get("/rag-documents")
+async def list_rag_documents():
+    """Wiki Agent에 적재된 문서 목록 조회."""
+    try:
+        token = await _get_wiki_token()
+        async with httpx.AsyncClient(timeout=30) as client:
+            res = await client.get(
+                f"{_WIKI_URL}/api/documents",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            res.raise_for_status()
+        return res.json()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Wiki Agent 문서 목록 조회 실패: {e}") from e
+
+
 @router.post("/to-wiki")
 async def ingest_to_wiki(
     filename: str = Form(...),

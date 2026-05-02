@@ -204,6 +204,21 @@ export const deleteObjects = async (docId: string, ids: string[]) => {
   return data as { objects: DocumentObject[] };
 };
 
+// ── RAG 적재 현황 ─────────────────────────────────────────────────────────────
+export interface RagDocument {
+  id: string;
+  original_name: string;
+  filename: string;
+  status: string;
+  chunk_count: number | null;
+  indexed_at: string | null;
+}
+
+export const listRagDocuments = async () => {
+  const { data } = await api.get('/api/ingest/rag-documents');
+  return data as RagDocument[];
+};
+
 // ── Settings ──────────────────────────────────────────────────────────────────
 export const listKeys = async () => {
   const { data } = await api.get('/api/settings/keys');

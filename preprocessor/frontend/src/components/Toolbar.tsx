@@ -9,8 +9,9 @@ import {
 import {
   uploadDocument, denoise, getNoiseCandidates,
   exportDocument, exportDocumentContent, ingestToWikiAgent,
-  reviewTable, reviewImage, listKeys,
+  reviewTable, reviewImage, listKeys, listRagDocuments,
 } from '../api/client';
+import type { RagDocument } from '../api/client';
 import type { DocumentObject } from '../types';
 import SettingsPanel from './SettingsPanel';
 
@@ -33,6 +34,8 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
   const [reviewingImage, setReviewingImage] = useState(false);
   const [ingesting, setIngesting] = useState(false);
   const [ingestResult, setIngestResult] = useState<{ chunkCount: number } | null>(null);
+  const [ragDocs, setRagDocs] = useState<RagDocument[] | null>(null);
+  const [ragLoading, setRagLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [noiseCandidates, setNoiseCandidates] = useState<{ text: string; count: number; object_ids: string[] }[]>([]);
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
@@ -358,6 +361,58 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
           <div style={{ fontSize: 10, color: '#8c8c8c', textAlign: 'center', lineHeight: 1.4 }}>
             전처리 완료 후 MD를<br />Wiki Agent DB에 인덱싱
           </div>
+        </div>
+
+        {divider}
+
+        {/* ── RAG 현황 ── */}
+        {sectionLabel('RAG 현황')}
+        <div style={{ padding: '0 10px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <Button
+            block
+            size="small"
+            loading={ragLoading}
+            onClick={async () => {
+              setRagLoading(true);
+              try {
+                const docs = await listRagDocuments();
+                setRagDocs(docs.filter(d => d.status !== 'indexing' || (d.chunk_count ?? 0) > 0));
+              } catch {
+                // 에러는 인터셉터에서 처리
+              } finally {
+                setRagLoading(false);
+              }
+            }}
+          >
+            적재 현황 조회
+          </Button>
+          {ragDocs !== null && (
+            <div style={{ border: '1px solid #e8e8e8', borderRadius: 6, overflow: 'hidden', fontSize: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '16px 1fr 56px 34px', gap: 0, background: '#fafafa', borderBottom: '1px solid #e8e8e8' }}>
+                {['', '문서명', '날짜', '청크'].map((h, i) => (
+                  <div key={i} style={{ padding: '3px 4px', fontWeight: 600, color: '#666' }}>{h}</div>
+                ))}
+              </div>
+              <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+                {ragDocs.length === 0 ? (
+                  <div style={{ padding: '8px', color: '#aaa', textAlign: 'center' }}>적재된 문서 없음</div>
+                ) : ragDocs.map((doc) => {
+                  const statusIcon = doc.status === 'indexed' ? '✅' : doc.status === 'error' ? '❌' : '⏳';
+                  const date = doc.indexed_at ? doc.indexed_at.slice(0, 10) : '-';
+                  const name = doc.original_name || doc.filename;
+                  const shortName = name.length > 22 ? name.slice(0, 22) + '…' : name;
+                  return (
+                    <div key={doc.id} style={{ display: 'grid', gridTemplateColumns: '16px 1fr 56px 34px', borderBottom: '1px solid #f5f5f5' }}>
+                      <div style={{ padding: '3px 4px' }}>{statusIcon}</div>
+                      <div style={{ padding: '3px 4px', overflow: 'hidden', color: '#333' }} title={name}>{shortName}</div>
+                      <div style={{ padding: '3px 4px', color: '#888' }}>{date}</div>
+                      <div style={{ padding: '3px 4px', color: '#666', textAlign: 'right' }}>{doc.chunk_count ?? 0}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {divider}

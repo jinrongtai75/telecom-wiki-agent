@@ -77,7 +77,8 @@ class MDExporter:
                     description = content
                 return f"{description}\n<!-- image: {obj.image_path} -->"
             if content.startswith("data:image"):
-                return f"![{alt}]({content})"
+                # base64를 MD에 직접 삽입하면 응답이 수 MB로 불어남 → 플레이스홀더로 대체
+                return f"[이미지: {alt}]"
             if content.startswith("http"):
                 return f"![{alt}]({content})"
             return content

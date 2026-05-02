@@ -82,13 +82,23 @@ async def ingest_to_wiki(
         pdf_bytes = await pdf_file.read()
         files["pdf_file"] = (pdf_file.filename, pdf_bytes, "application/pdf")
 
-    async with httpx.AsyncClient(timeout=300) as client:
-        res = await client.post(
-            f"{_WIKI_URL}/api/ingest/md",
-            data={"filename": filename, "content": content, "source_name": source_name},
-            files=files or None,
-            headers={"Authorization": f"Bearer {token}"},
-        )
-        res.raise_for_status()
+    try:
+        async with httpx.AsyncClient(timeout=300) as client:
+            res = await client.post(
+                f"{_WIKI_URL}/api/ingest/md",
+                data={"filename": filename, "content": content, "source_name": source_name},
+                files=files or None,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            res.raise_for_status()
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Wiki Agent 적재 타임아웃 (300초 초과)")
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Wiki Agent 적재 실패 (status={e.response.status_code}): {e.response.text[:500]}",
+        ) from e
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=502, detail=f"Wiki Agent 연결 오류: {e}") from e
 
     return JSONResponse(content=res.json())

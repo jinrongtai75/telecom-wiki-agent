@@ -25,26 +25,37 @@ _chroma_client = None
 _collection = None
 
 
+MAX_CHARS = 25000   # gemini-embedding-001 안전 입력 한도 (8192 토큰 ≈ 30K chars)
+BATCH_SIZE = 50     # batchEmbedContents 최대 권장 배치 크기
+
+
 class _GeminiEmbeddingFunction(EmbeddingFunction):
-    """Gemini gemini-embedding-001 API 기반 임베딩."""
+    """Gemini gemini-embedding-001 API 기반 임베딩 (배치 처리 + 길이 제한)."""
 
     def __init__(self, api_key: str) -> None:
         self._key = api_key
 
-    def __call__(self, input: Documents) -> Embeddings:
+    def _embed_batch(self, texts: list[str]) -> list[list[float]]:
         requests_body = {
             "requests": [
-                {"model": f"models/{GEMINI_EMBED_MODEL}", "content": {"parts": [{"text": t}]}}
-                for t in input
+                {"model": f"models/{GEMINI_EMBED_MODEL}", "content": {"parts": [{"text": t[:MAX_CHARS] or " "}]}}
+                for t in texts
             ]
         }
         resp = httpx.post(
             f"{GEMINI_EMBED_URL}?key={self._key}",
             json=requests_body,
-            timeout=60,
+            timeout=120,
         )
         resp.raise_for_status()
         return [item["values"] for item in resp.json()["embeddings"]]
+
+    def __call__(self, input: Documents) -> Embeddings:
+        results: Embeddings = []
+        for i in range(0, len(input), BATCH_SIZE):
+            batch = input[i : i + BATCH_SIZE]
+            results.extend(self._embed_batch(batch))
+        return results
 
 
 class _HashEmbeddingFunction(EmbeddingFunction):

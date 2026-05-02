@@ -42,10 +42,21 @@ async def _get_wiki_token() -> str:
 @router.get("/check-wiki-auth")
 async def check_wiki_auth():
     """Wiki Agent 로그인 진단용 엔드포인트 — 실제 로그인 시도 후 결과 반환."""
+    import hashlib
     username = _get_wiki_user()
     wiki_pass = _get_wiki_pass()
+    pass_from_env = os.environ.get("WIKI_AGENT_PASSWORD", "")
+    pass_from_mgr = _key_mgr.get_key("WIKI_AGENT_PASSWORD") or ""
+    diag = {
+        "env_var_len": len(pass_from_env),
+        "env_var_stripped_len": len(pass_from_env.strip()),
+        "env_var_sha256": hashlib.sha256(pass_from_env.encode()).hexdigest()[:12],
+        "key_mgr_len": len(pass_from_mgr),
+        "key_mgr_sha256": hashlib.sha256(pass_from_mgr.encode()).hexdigest()[:12],
+        "final_pass_sha256": hashlib.sha256(wiki_pass.encode()).hexdigest()[:12] if wiki_pass else None,
+    }
     if not wiki_pass:
-        return {"ok": False, "username": username, "error": "비밀번호 미설정 (503)"}
+        return {"ok": False, "username": username, "error": "비밀번호 미설정", "diag": diag}
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             res = await client.post(
@@ -53,10 +64,10 @@ async def check_wiki_auth():
                 json={"username": username, "password": wiki_pass},
             )
         if res.status_code == 200:
-            return {"ok": True, "username": username, "wiki_url": _WIKI_URL}
-        return {"ok": False, "username": username, "wiki_url": _WIKI_URL, "status": res.status_code, "detail": res.text[:200]}
+            return {"ok": True, "username": username, "wiki_url": _WIKI_URL, "diag": diag}
+        return {"ok": False, "username": username, "wiki_url": _WIKI_URL, "status": res.status_code, "detail": res.text[:200], "diag": diag}
     except Exception as e:
-        return {"ok": False, "username": username, "error": str(e)}
+        return {"ok": False, "username": username, "error": str(e), "diag": diag}
 
 
 @router.post("/to-wiki")

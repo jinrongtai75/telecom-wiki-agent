@@ -20,7 +20,7 @@ from app.models.db_models import Document, User
 from app.modules import vector_store
 from app.modules.md_chunker import md_chunker
 from app.security.auth_deps import get_current_user
-from app.services.storage_service import get_storage
+from app.services.storage_service import LocalStorageService, get_storage
 
 router = APIRouter(prefix="/api/ingest", tags=["ingest"])
 
@@ -160,5 +160,80 @@ def reindex_all(
         "reindexed": len(reindexed),
         "errors": len(errors),
         "results": reindexed,
+        "error_details": errors,
+    }
+
+
+@router.post("/migrate-storage", status_code=200)
+def migrate_storage(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    로컬 파일시스템 → Supabase 마이그레이션 + ChromaDB 재인덱싱 (관리자 전용).
+    1) ChromaDB 리셋 (Gemini 임베딩으로 재시작)
+    2) 각 문서의 MD/PDF를 로컬→Supabase 이전
+    3) MD로 ChromaDB 재인덱싱
+    """
+    if not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="관리자만 실행 가능합니다")
+
+    local = LocalStorageService(base_path="./data")
+    cloud = get_storage()
+    is_cloud = not isinstance(cloud, LocalStorageService)
+
+    # ChromaDB 리셋 (Gemini 임베딩 공간으로 재초기화)
+    vector_store.reset_collection()
+
+    docs = db.query(Document).filter(Document.status == "indexed").all()
+    reindexed: list[dict] = []
+    pdf_migrated: list[str] = []
+    errors: list[dict] = []
+
+    for doc in docs:
+        try:
+            md_key = f"markdowns/{doc.id}.md"
+            md_bytes: bytes | None = None
+
+            # MD: 로컬 우선 → 없으면 클라우드에서 시도
+            if local.exists(md_key):
+                md_bytes = local.load(md_key)
+                if is_cloud:
+                    cloud.save(md_key, md_bytes)  # 로컬 → Supabase 이전
+            elif is_cloud:
+                try:
+                    md_bytes = cloud.load(md_key)
+                except FileNotFoundError:
+                    pass
+
+            if md_bytes is None:
+                errors.append({"name": doc.original_name, "error": "MD 파일 없음 — 전처리 에이전트에서 재적재 필요"})
+                continue
+
+            # ChromaDB 재인덱싱
+            vector_store.delete_doc(doc.id)
+            chunks = md_chunker.chunk_from_text(md_bytes.decode("utf-8"), doc.id)
+            chunk_count = vector_store.index_chunks(chunks)
+            doc.chunk_count = chunk_count
+            doc.indexed_at = datetime.now(UTC)
+            db.commit()
+            reindexed.append({"name": doc.original_name, "chunks": chunk_count})
+
+            # PDF: 로컬에 있고 Supabase에 없으면 이전
+            if is_cloud:
+                pdf_key = f"documents/{doc.id}.pdf"
+                if local.exists(pdf_key) and not cloud.exists(pdf_key):
+                    cloud.save(pdf_key, local.load(pdf_key))
+                    pdf_migrated.append(doc.original_name)
+
+        except Exception as e:
+            errors.append({"name": doc.original_name, "error": str(e)})
+
+    return {
+        "reindexed": len(reindexed),
+        "pdf_migrated": len(pdf_migrated),
+        "errors": len(errors),
+        "results": reindexed,
+        "pdf_files": pdf_migrated,
         "error_details": errors,
     }

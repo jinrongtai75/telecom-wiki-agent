@@ -291,6 +291,23 @@ for d in json.load(sys.stdin):
 "
 ```
 
+## 자동 재인덱싱 (메인 백엔드)
+
+Railway 재배포 → ChromaDB 소실 → 앱 시작 시 백그라운드 스레드에서 자동 복구.
+
+- `main.py`의 `_run_auto_reindex()` 함수가 `ThreadPoolExecutor`로 비동기 실행됨
+- Gemini 임베딩 API 호출이 오래 걸려 동기 실행 시 Railway healthcheck 타임아웃 발생
+- **반드시 백그라운드 스레드로 실행해야 함** — lifespan 내 동기 실행 금지
+
+## 참조문서 PDF 미리보기
+
+검색 결과 소스카드의 "미리보기" 버튼은 `has_pdf=true`인 경우에만 표시됨.
+
+- 검색 API(`/api/search/stream`, `/api/search`)에서 `storage.exists()` 확인 후 `SourceInfo.has_pdf` 설정
+- 전처리 에이전트에서 적재 시 PDF를 함께 전송해야 미리보기 활성화
+- PDF 없이 적재된 문서는 미리보기 버튼 자체가 표시되지 않음
+- 미리보기를 원하면 전처리 에이전트에서 **PDF 파일을 첨부하여 재적재** 필요
+
 ## 미완료 항목
 
 - `/api/ingest/check` 엔드포인트 — TDD RED 완료 (테스트 4개 실패), 구현 미완

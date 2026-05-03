@@ -12,8 +12,16 @@ from app.modules import answer_gen, vector_store
 from app.modules.llm_client import LLMClient
 from app.modules.threegpp import search_3gpp
 from app.security.auth_deps import get_current_user
+from app.services.storage_service import get_storage
 
 router = APIRouter(prefix="/api/search", tags=["search"])
+
+
+def _check_has_pdf(doc_id: str) -> bool:
+    try:
+        return get_storage().exists(f"documents/{doc_id}.pdf")
+    except Exception:
+        return False
 
 
 def _resolve_token(api_token: str, db: Session) -> str:
@@ -91,6 +99,7 @@ def search(
             score=chunk.get("score", 0.0),
             image_path=chunk.get("image_path"),
             from_3gpp=False,
+            has_pdf=_check_has_pdf(doc_id),
         ))
 
     if threegpp_results:
@@ -179,6 +188,7 @@ def search_stream(
                 score=chunk.get("score", 0.0),
                 image_path=chunk.get("image_path"),
                 from_3gpp=False,
+                has_pdf=_check_has_pdf(doc_id),
             ))
         if threegpp_results:
             for r in threegpp_results[:3]:

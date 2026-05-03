@@ -85,6 +85,7 @@ class SourceInfo(BaseModel):
     score: float
     image_path: str | None = None
     from_3gpp: bool = False
+    has_pdf: bool = False
 
 
 class SearchResponse(BaseModel):

@@ -336,21 +336,23 @@ def get_pdf_file(
     db: Session = Depends(get_db),
 ):
     """원본 PDF 파일 반환 (pdfjs-dist 클라이언트 렌더링용)."""
+    from urllib.parse import quote  # noqa: PLC0415
     doc = db.query(Document).filter(Document.id == doc_id).first()
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
     try:
         pdf_bytes = get_storage().load(f"documents/{doc_id}.pdf")
-    except FileNotFoundError:
+    except Exception:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="PDF file not found")
 
+    filename_encoded = quote(doc.original_name, safe="")
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={
             "Cache-Control": "private, max-age=3600",
-            "Content-Disposition": f'inline; filename="{doc.original_name}"',
+            "Content-Disposition": f"inline; filename*=UTF-8''{filename_encoded}",
         },
     )
 

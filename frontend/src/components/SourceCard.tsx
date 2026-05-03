@@ -6,7 +6,7 @@ export default function SourceCard({ source, dark = false }: { source: SourceInf
   const [previewOpen, setPreviewOpen] = useState(false)
 
   const externalUrl = source.from_3gpp && source.section ? source.section : null
-  const hasPdfPreview = !source.from_3gpp && !!source.doc_id
+  const hasPdfPreview = !source.from_3gpp && !!source.doc_id && !!source.has_pdf
 
   const isClickable = !!(externalUrl || hasPdfPreview)
 

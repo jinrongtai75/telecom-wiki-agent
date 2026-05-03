@@ -6,6 +6,7 @@ export interface SourceInfo {
   score: number
   image_path?: string
   from_3gpp: boolean
+  has_pdf?: boolean
 }
 
 export interface SearchResponse {

@@ -199,7 +199,10 @@ def migrate_storage(
             if local.exists(md_key):
                 md_bytes = local.load(md_key)
                 if is_cloud:
-                    cloud.save(md_key, md_bytes)  # 로컬 → Supabase 이전
+                    try:
+                        cloud.save(md_key, md_bytes)  # 로컬 → Supabase 이전
+                    except Exception:
+                        pass  # 스토리지 이전 실패해도 재인덱싱은 계속
             elif is_cloud:
                 try:
                     md_bytes = cloud.load(md_key)
@@ -223,8 +226,11 @@ def migrate_storage(
             if is_cloud:
                 pdf_key = f"documents/{doc.id}.pdf"
                 if local.exists(pdf_key) and not cloud.exists(pdf_key):
-                    cloud.save(pdf_key, local.load(pdf_key))
-                    pdf_migrated.append(doc.original_name)
+                    try:
+                        cloud.save(pdf_key, local.load(pdf_key))
+                        pdf_migrated.append(doc.original_name)
+                    except Exception:
+                        pass
 
         except Exception as e:
             errors.append({"name": doc.original_name, "error": str(e)})

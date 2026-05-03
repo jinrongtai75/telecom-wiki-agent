@@ -101,8 +101,16 @@ class SupabaseStorageService(StorageService):
 
     def save(self, key: str, data: bytes) -> None:
         url = self._object_url(key)
-        # upsert: 먼저 POST 시도, 이미 존재하면 PUT으로 덮어쓰기
-        r = self._client.post(url, content=data, headers={**self._headers, "x-upsert": "true"})
+        if key.endswith(".pdf"):
+            content_type = "application/pdf"
+        elif key.endswith(".md"):
+            content_type = "text/markdown"
+        else:
+            content_type = "application/octet-stream"
+        r = self._client.post(
+            url, content=data,
+            headers={**self._headers, "x-upsert": "true", "Content-Type": content_type},
+        )
         if r.status_code not in (200, 201):
             r.raise_for_status()
 

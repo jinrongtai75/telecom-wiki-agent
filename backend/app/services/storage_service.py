@@ -82,8 +82,7 @@ class LocalStorageService(StorageService):
 
 class SupabaseStorageService(StorageService):
     """
-    Supabase Storage 백엔드.
-    필요 패키지: uv add supabase
+    Supabase Storage 백엔드 — httpx로 REST API 직접 호출 (supabase SDK 불필요).
 
     버킷 설정:
       - Supabase 대시보드 → Storage → New bucket
@@ -91,41 +90,38 @@ class SupabaseStorageService(StorageService):
     """
 
     def __init__(self, url: str, key: str, bucket: str) -> None:
-        try:
-            from supabase import create_client  # type: ignore[import]
-        except ImportError as exc:
-            raise RuntimeError(
-                "Supabase 패키지가 설치되지 않았습니다. 'uv add supabase' 실행 후 재시작하세요."
-            ) from exc
-        self.client = create_client(url, key)
-        self.bucket = bucket
+        import httpx  # noqa: PLC0415
+        self._base = f"{url.rstrip('/')}/storage/v1/object"
+        self._headers = {"Authorization": f"Bearer {key}", "apikey": key}
+        self._bucket = bucket
+        self._client = httpx.Client(timeout=60)
+
+    def _object_url(self, key: str) -> str:
+        return f"{self._base}/{self._bucket}/{key}"
 
     def save(self, key: str, data: bytes) -> None:
-        # upsert=True: 동일 키 재업로드 허용
-        self.client.storage.from_(self.bucket).upload(
-            path=key,
-            file=data,
-            file_options={"upsert": "true"},
-        )
+        url = self._object_url(key)
+        # upsert: 먼저 POST 시도, 이미 존재하면 PUT으로 덮어쓰기
+        r = self._client.post(url, content=data, headers={**self._headers, "x-upsert": "true"})
+        if r.status_code not in (200, 201):
+            r.raise_for_status()
 
     def load(self, key: str) -> bytes:
-        try:
-            return bytes(self.client.storage.from_(self.bucket).download(key))
-        except Exception as exc:
-            raise FileNotFoundError(f"Storage key not found: {key}") from exc
+        r = self._client.get(self._object_url(key), headers=self._headers)
+        if r.status_code == 404:
+            raise FileNotFoundError(f"Storage key not found: {key}")
+        r.raise_for_status()
+        return r.content
 
     def delete(self, key: str) -> None:
         try:
-            self.client.storage.from_(self.bucket).remove([key])
+            self._client.delete(self._object_url(key), headers=self._headers)
         except Exception:
-            pass  # 없는 파일 삭제는 무시
+            pass
 
     def exists(self, key: str) -> bool:
-        try:
-            self.client.storage.from_(self.bucket).download(key)
-            return True
-        except Exception:
-            return False
+        r = self._client.head(self._object_url(key), headers=self._headers)
+        return r.status_code == 200
 
 
 # ── 팩토리 (싱글턴) ──────────────────────────────────────────────────────────

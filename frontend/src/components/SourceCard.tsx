@@ -83,8 +83,8 @@ export default function SourceCard({ source, dark = false }: { source: SourceInf
               </button>
             </div>
 
-            {/* PDF 뷰어 */}
-            <div className="flex-1 overflow-hidden">
+            {/* PDF 뷰어: min-h-0 + flex flex-col 필수 — PdfPageViewer의 flex-1/overflow-y-auto가 동작하려면 부모가 flex container여야 함 */}
+            <div className="flex-1 min-h-0 flex flex-col">
               <PdfPageViewer
                 docId={source.doc_id}
                 totalPages={0}

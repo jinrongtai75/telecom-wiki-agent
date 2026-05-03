@@ -220,7 +220,7 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
     <div style={{
       fontSize: 10,
       fontWeight: 600,
-      color: '#8c8c8c',
+      color: 'rgba(255,255,255,0.3)',
       letterSpacing: '0.6px',
       textTransform: 'uppercase',
       padding: '10px 12px 4px',
@@ -229,7 +229,7 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
     </div>
   );
 
-  const divider = <div style={{ height: 1, background: '#e8e8e8', margin: '6px 0' }} />;
+  const divider = <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '6px 0' }} />;
 
   return (
     <Spin spinning={loading}>
@@ -259,17 +259,17 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
           </Button>
           {noiseOpen && (
             <div style={{
-              border: '1px solid #e8e8e8',
+              border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: 8,
-              background: '#fff',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+              background: '#1e1e35',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
               overflow: 'hidden',
             }}>
               <div style={{ maxHeight: 200, overflowY: 'auto', padding: '4px 8px' }}>
                 {noiseCandidates.map((c) => {
                   const allChecked = c.object_ids.every((id) => checkedIds.has(id));
                   return (
-                    <div key={c.text} style={{ padding: '4px 0', borderBottom: '1px solid #f5f5f5' }}>
+                    <div key={c.text} style={{ padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                       <Checkbox
                         checked={allChecked}
                         onChange={(e) => toggleCandidate(c.object_ids, e.target.checked)}
@@ -285,7 +285,7 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
                   );
                 })}
               </div>
-              <div style={{ padding: '6px 8px', borderTop: '1px solid #f0f0f0', background: '#fafafa' }}>
+              <div style={{ padding: '6px 8px', borderTop: '1px solid rgba(255,255,255,0.07)', background: '#161622' }}>
                 <Input
                   size="small"
                   placeholder="포함 텍스트로 삭제 (예: Proprietary)"
@@ -387,26 +387,26 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
             적재 현황 조회
           </Button>
           {ragDocs !== null && (
-            <div style={{ border: '1px solid #e8e8e8', borderRadius: 6, overflow: 'hidden', fontSize: 10 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '16px 1fr 56px 34px', gap: 0, background: '#fafafa', borderBottom: '1px solid #e8e8e8' }}>
+            <div style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, overflow: 'hidden', fontSize: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '16px 1fr 56px 34px', gap: 0, background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
                 {['', '문서명', '날짜', '청크'].map((h, i) => (
-                  <div key={i} style={{ padding: '3px 4px', fontWeight: 600, color: '#666' }}>{h}</div>
+                  <div key={i} style={{ padding: '3px 4px', fontWeight: 600, color: 'rgba(255,255,255,0.4)' }}>{h}</div>
                 ))}
               </div>
               <div style={{ maxHeight: 220, overflowY: 'auto' }}>
                 {ragDocs.length === 0 ? (
-                  <div style={{ padding: '8px', color: '#aaa', textAlign: 'center' }}>적재된 문서 없음</div>
+                  <div style={{ padding: '8px', color: 'rgba(255,255,255,0.25)', textAlign: 'center' }}>적재된 문서 없음</div>
                 ) : ragDocs.map((doc) => {
                   const statusIcon = doc.status === 'indexed' ? '✅' : doc.status === 'error' ? '❌' : '⏳';
                   const date = doc.indexed_at ? doc.indexed_at.slice(0, 10) : '-';
                   const name = doc.original_name || doc.filename;
                   const shortName = name.length > 22 ? name.slice(0, 22) + '…' : name;
                   return (
-                    <div key={doc.id} style={{ display: 'grid', gridTemplateColumns: '16px 1fr 56px 34px', borderBottom: '1px solid #f5f5f5' }}>
+                    <div key={doc.id} style={{ display: 'grid', gridTemplateColumns: '16px 1fr 56px 34px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                       <div style={{ padding: '3px 4px' }}>{statusIcon}</div>
-                      <div style={{ padding: '3px 4px', overflow: 'hidden', color: '#333' }} title={name}>{shortName}</div>
-                      <div style={{ padding: '3px 4px', color: '#888' }}>{date}</div>
-                      <div style={{ padding: '3px 4px', color: '#666', textAlign: 'right' }}>{doc.chunk_count ?? 0}</div>
+                      <div style={{ padding: '3px 4px', overflow: 'hidden', color: 'rgba(255,255,255,0.75)' }} title={name}>{shortName}</div>
+                      <div style={{ padding: '3px 4px', color: 'rgba(255,255,255,0.35)' }}>{date}</div>
+                      <div style={{ padding: '3px 4px', color: 'rgba(255,255,255,0.5)', textAlign: 'right' }}>{doc.chunk_count ?? 0}</div>
                     </div>
                   );
                 })}

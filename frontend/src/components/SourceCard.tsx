@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { SourceInfo } from '../types'
 
-export default function SourceCard({ source }: { source: SourceInfo }) {
+export default function SourceCard({ source, dark = false }: { source: SourceInfo; dark?: boolean }) {
   const [previewOpen, setPreviewOpen] = useState(false)
 
   // PDF 페이지 미리보기 URL (doc_id + page_num)
@@ -10,10 +10,14 @@ export default function SourceCard({ source }: { source: SourceInfo }) {
       ? `/api/documents/${source.doc_id}/page/${source.page}`
       : null
 
+  const cardClass = dark
+    ? 'flex items-start gap-3 p-3 bg-white/5 rounded-lg border border-white/10 cursor-pointer hover:bg-white/10 hover:border-white/20 transition-colors'
+    : 'flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors'
+
   return (
     <>
       <div
-        className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors"
+        className={cardClass}
         onClick={() => pagePreviewUrl && setPreviewOpen(true)}
         title={pagePreviewUrl ? '클릭하여 페이지 미리보기' : undefined}
       >
@@ -36,20 +40,20 @@ export default function SourceCard({ source }: { source: SourceInfo }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             {source.from_3gpp && (
-              <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">3GPP</span>
+              <span className={`text-xs px-1.5 py-0.5 rounded ${dark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-700'}`}>3GPP</span>
             )}
-            <span className="text-xs font-medium text-gray-700 truncate">{source.filename}</span>
+            <span className={`text-xs font-medium truncate ${dark ? 'text-gray-300' : 'text-gray-700'}`}>{source.filename}</span>
           </div>
           {source.page > 0 && (
-            <p className="text-xs text-gray-500 mt-0.5">p.{source.page}</p>
+            <p className={`text-xs mt-0.5 ${dark ? 'text-gray-500' : 'text-gray-500'}`}>p.{source.page}</p>
           )}
           {source.section && (
-            <p className="text-xs text-gray-400 mt-0.5 truncate">{source.section}</p>
+            <p className={`text-xs mt-0.5 truncate ${dark ? 'text-gray-600' : 'text-gray-400'}`}>{source.section}</p>
           )}
           <div className="mt-1 flex items-center gap-2">
-            <span className="text-xs text-gray-400">관련도 {Math.round(source.score * 100)}%</span>
+            <span className={`text-xs ${dark ? 'text-gray-600' : 'text-gray-400'}`}>관련도 {Math.round(source.score * 100)}%</span>
             {pagePreviewUrl && (
-              <span className="text-xs text-lgu-pink">미리보기 →</span>
+              <span className="text-xs text-[#E6007E]">미리보기 →</span>
             )}
           </div>
         </div>

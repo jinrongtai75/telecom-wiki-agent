@@ -34,22 +34,45 @@ export default function App() {
   }, []);
 
   return (
-    <Layout style={{ height: '100vh' }}>
+    <Layout style={{ height: '100vh', background: '#0f0f17' }}>
       <Sider
-        width={260}
-        theme="light"
-        style={{ borderRight: '1px solid #e8e8e8', overflowY: 'auto', background: '#fafafa' }}
+        width={264}
+        style={{
+          background: '#161622',
+          borderRight: '1px solid rgba(255,255,255,0.07)',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+        }}
       >
+        {/* 브랜드 헤더 */}
         <div style={{
           padding: '14px 16px 12px',
-          borderBottom: '1px solid #e8e8e8',
-          background: '#fafafa',
+          borderBottom: '1px solid rgba(255,255,255,0.07)',
+          background: '#161622',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
         }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#1a1a1a', letterSpacing: '-0.2px' }}>
-            문서 전처리 도구
+          <div style={{
+            width: 32, height: 32, borderRadius: 10, flexShrink: 0,
+            background: 'linear-gradient(135deg, #E6007E, #9b0050)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
+              <path d="M1.5 8.5a13 13 0 0 1 21 0" />
+              <path d="M5 12a10 10 0 0 1 14 0" />
+              <path d="M8.5 15.5a6 6 0 0 1 7 0" />
+              <circle cx="12" cy="19" r="1" fill="white" stroke="none" />
+            </svg>
           </div>
-          <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 2 }}>RAG Pipeline Preprocessor</div>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: '-0.2px' }}>
+              문서 전처리 도구
+            </div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>RAG Pipeline Preprocessor</div>
+          </div>
         </div>
+
         <Toolbar
           docId={docId}
           format={format}
@@ -64,7 +87,7 @@ export default function App() {
         />
       </Sider>
 
-      <Content style={{ height: '100vh', overflow: 'hidden' }}>
+      <Content style={{ height: '100vh', overflow: 'hidden', background: '#0f0f17' }}>
         <Viewer
           docId={docId}
           format={format}

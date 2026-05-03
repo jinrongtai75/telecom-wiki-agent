@@ -65,7 +65,7 @@ const SortableItem = memo(function SortableItem({
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.5 : 1,
-        outline: isSelected ? '2px solid #1677ff' : 'none',
+        outline: isSelected ? '2px solid #E6007E' : 'none',
         borderRadius: 4,
         display: 'flex',
         alignItems: 'flex-start',
@@ -80,7 +80,7 @@ const SortableItem = memo(function SortableItem({
         style={{
           paddingTop: 8,
           cursor: 'grab',
-          color: '#bbb',
+          color: 'rgba(255,255,255,0.2)',
           flexShrink: 0,
           touchAction: 'none',
         }}
@@ -172,8 +172,8 @@ export default function Viewer({ docId, format, rawContent, objects, selectMode,
     if (!selectedObjId) return;
     const el = container.querySelector(`[data-obj-id="${selectedObjId}"]`) as HTMLElement | null;
     if (el) {
-      el.style.outline = '2px solid #1677ff';
-      el.style.background = 'rgba(22,119,255,0.08)';
+      el.style.outline = '2px solid #E6007E';
+      el.style.background = 'rgba(230,0,126,0.08)';
       el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       prevHighlightRef.current = el;
     }
@@ -296,8 +296,8 @@ export default function Viewer({ docId, format, rawContent, objects, selectMode,
       <Splitter style={{ height: '100%' }}>
         {/* 좌측: 원본 문서 */}
         <Splitter.Panel defaultSize="50%" min="25%">
-          <div style={{ height: '100%', background: '#fafafa', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '8px 8px 6px', borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
+          <div style={{ height: '100%', background: '#0f0f17', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '8px 8px 6px', borderBottom: '1px solid rgba(255,255,255,0.07)', flexShrink: 0 }}>
               <Typography.Title level={5} style={{ margin: 0 }}>원본 문서</Typography.Title>
             </div>
             <div ref={leftScrollRef} style={{ flex: 1, overflowY: 'auto', padding: 8 }}>
@@ -331,8 +331,8 @@ export default function Viewer({ docId, format, rawContent, objects, selectMode,
 
         {/* 우측: 전처리 결과 */}
         <Splitter.Panel>
-          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '8px 8px 6px', borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
+          <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#0f0f17' }}>
+            <div style={{ padding: '8px 8px 6px', borderBottom: '1px solid rgba(255,255,255,0.07)', flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography.Title level={5} style={{ margin: 0 }}>
                   전처리 결과
@@ -405,14 +405,14 @@ export default function Viewer({ docId, format, rawContent, objects, selectMode,
                                 justifyContent: 'space-between',
                                 padding: '5px 10px',
                                 margin: '10px 0 6px',
-                                background: '#f5f5f5',
+                                background: 'rgba(255,255,255,0.04)',
                                 borderRadius: 6,
-                                borderLeft: '3px solid #d9d9d9',
+                                borderLeft: '3px solid rgba(230,0,126,0.5)',
                               }}>
-                                <span style={{ fontWeight: 700, fontSize: 11, color: '#595959', letterSpacing: '0.3px' }}>
+                                <span style={{ fontWeight: 700, fontSize: 11, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.3px' }}>
                                   PAGE {pageNum}
                                 </span>
-                                <span style={{ fontSize: 10, color: '#bfbfbf' }}>
+                                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>
                                   of {totalPages}
                                 </span>
                               </div>

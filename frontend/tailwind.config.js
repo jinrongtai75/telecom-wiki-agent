@@ -10,6 +10,15 @@ export default {
           gray: '#f5f5f5',
         },
       },
+      animation: {
+        'cursor-blink': 'cursor-blink 0.9s ease-in-out infinite',
+      },
+      keyframes: {
+        'cursor-blink': {
+          '0%, 100%': { opacity: '1' },
+          '50%':       { opacity: '0' },
+        },
+      },
     },
   },
   plugins: [],

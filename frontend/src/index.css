@@ -7,28 +7,85 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* 마크다운 렌더링 스타일 */
+/* ── Cursor blink ─────────────────────────────────────────────────────── */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.animate-cursor-blink {
+  animation: cursor-blink 0.9s ease-in-out infinite;
+}
+
+/* ── Thin scrollbar ───────────────────────────────────────────────────── */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar       { width: 5px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+
+/* ── Dark prose (AI responses) ────────────────────────────────────────── */
+.prose-dark h1, .prose-dark h2, .prose-dark h3, .prose-dark h4 {
+  @apply font-bold text-white mt-5 mb-2;
+}
+.prose-dark h1 { @apply text-base; }
+.prose-dark h2 { @apply text-sm; }
+.prose-dark h3 { @apply text-sm; }
+
+.prose-dark p  { @apply text-gray-200 leading-relaxed mb-3; }
+
+.prose-dark ul { @apply list-disc pl-5 mb-3 space-y-1; }
+.prose-dark ol { @apply list-decimal pl-5 mb-3 space-y-1; }
+.prose-dark li { @apply text-gray-200 text-sm; }
+
+.prose-dark strong { @apply font-semibold text-white; }
+.prose-dark em     { @apply italic text-gray-300; }
+
+.prose-dark code {
+  @apply bg-white/10 text-[#E6007E] px-1.5 py-0.5 rounded text-xs font-mono;
+}
+.prose-dark pre {
+  @apply bg-black/40 border border-white/10 p-4 rounded-xl overflow-x-auto text-xs mb-4;
+}
+.prose-dark pre code {
+  @apply bg-transparent text-gray-300 p-0;
+}
+
+.prose-dark table {
+  @apply w-full border-collapse text-sm mb-4;
+}
+.prose-dark th {
+  @apply border border-white/10 px-3 py-2 bg-white/5 text-left font-semibold text-gray-200 text-xs;
+}
+.prose-dark td {
+  @apply border border-white/10 px-3 py-2 text-gray-300 text-xs;
+}
+
+.prose-dark blockquote {
+  @apply border-l-2 border-[#E6007E]/50 pl-4 italic text-gray-400 my-3;
+}
+
+.prose-dark hr {
+  @apply border-white/10 my-4;
+}
+
+.prose-dark a {
+  @apply text-[#E6007E] hover:underline;
+}
+
+/* ── Light prose (kept for other pages) ─────────────────────────────── */
 .prose h1, .prose h2, .prose h3 {
   @apply font-bold text-gray-800;
 }
-.prose ul {
-  @apply list-disc pl-4;
-}
-.prose ol {
-  @apply list-decimal pl-4;
-}
+.prose ul  { @apply list-disc pl-4; }
+.prose ol  { @apply list-decimal pl-4; }
 .prose code {
   @apply bg-gray-100 px-1 py-0.5 rounded text-xs font-mono;
 }
 .prose pre {
   @apply bg-gray-100 p-3 rounded-lg overflow-x-auto text-xs;
 }
-.prose table {
-  @apply w-full border-collapse text-sm;
-}
-.prose th, .prose td {
-  @apply border border-gray-200 px-2 py-1;
-}
-.prose th {
-  @apply bg-gray-50 font-medium;
-}
+.prose table { @apply w-full border-collapse text-sm; }
+.prose th, .prose td { @apply border border-gray-200 px-2 py-1; }
+.prose th { @apply bg-gray-50 font-medium; }

@@ -168,7 +168,11 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
           } else {
             kept++;
           }
-        } catch {
+        } catch (err: any) {
+          if (err?.response?.status === 404) {
+            message.error('서버에서 문서를 찾을 수 없습니다. PDF를 다시 업로드해주세요.');
+            break;
+          }
           failed++;
         }
       }
@@ -205,7 +209,11 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
             if (idx !== -1) currentObjects[idx] = { ...currentObjects[idx], processed_content: res.processed_content };
             described++;
           }
-        } catch {
+        } catch (err: any) {
+          if (err?.response?.status === 404) {
+            message.error('서버에서 문서를 찾을 수 없습니다. PDF를 다시 업로드해주세요.');
+            break;
+          }
           failed++;
         }
       }

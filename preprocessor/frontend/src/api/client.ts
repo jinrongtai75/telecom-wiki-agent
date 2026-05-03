@@ -150,12 +150,12 @@ export const flattenTable = async (docId: string, objId: string) => {
 };
 
 export const reviewTable = async (docId: string, objId: string) => {
-  const { data } = await api.post(`/api/objects/${docId}/${objId}/table/review`);
+  const { data } = await silentApi.post(`/api/objects/${docId}/${objId}/table/review`);
   return data as { action: 'keep' | 'flatten'; processed_content: string };
 };
 
 export const reviewImage = async (docId: string, objId: string) => {
-  const { data } = await api.post(`/api/objects/${docId}/${objId}/image/review`);
+  const { data } = await silentApi.post(`/api/objects/${docId}/${objId}/image/review`);
   return data as
     | { action: 'discard'; objects: import('../types').DocumentObject[] }
     | { action: 'save'; processed_content: string; image_path: string }

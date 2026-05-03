@@ -86,7 +86,10 @@ class _HashEmbeddingFunction(EmbeddingFunction):
 
 
 def _make_embedding_function() -> EmbeddingFunction:
-    """DB에 저장된 Gemini 키 → 없으면 해시 폴백."""
+    """env var → DB → 해시 폴백 순으로 Gemini 키 조회."""
+    env_key = os.environ.get("GEMINI_API_KEY", "")
+    if env_key:
+        return _GeminiEmbeddingFunction(env_key)
     try:
         from app.database import _get_session_local  # noqa: PLC0415
         from app.models.db_models import AppSetting  # noqa: PLC0415

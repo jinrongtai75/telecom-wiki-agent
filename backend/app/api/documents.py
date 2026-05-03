@@ -31,7 +31,8 @@ MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
 
 
 def _get_llm(api_token: str, db: Session) -> LLMClient:
-    token = api_token
+    import os  # noqa: PLC0415
+    token = api_token or os.environ.get("GEMINI_API_KEY", "")
     if not token:
         setting = db.get(AppSetting, "gemini_token")
         if setting and setting.value:

@@ -3,7 +3,6 @@ import ReactMarkdown from 'react-markdown'
 import { useAuth } from '../contexts/AuthContext'
 import { searchStream } from '../services/api'
 import SourceCard from '../components/SourceCard'
-import AuthKeyPanel from '../components/AuthKeyPanel'
 import type { SearchResponse, SourceInfo } from '../types'
 import { useNavigate } from 'react-router-dom'
 
@@ -302,18 +301,6 @@ export default function SearchPage() {
 
         {/* Bottom */}
         <div className="p-3 border-t border-white/5 space-y-2">
-          {/* API key panel */}
-          <div className="px-1">
-            <AuthKeyPanel compact />
-          </div>
-
-          {/* API key missing warning */}
-          {!apiToken && (
-            <div className="px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-xs text-yellow-400">
-              API 키 미설정 — 답변 생성 불가
-            </div>
-          )}
-
           <button
             onClick={logout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-colors"

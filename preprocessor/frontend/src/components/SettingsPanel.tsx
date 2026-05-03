@@ -1,23 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Card, Form, Input, Button, Space, Tag, message } from 'antd';
-import { listKeys, saveKey, validateKey } from '../api/client';
+import { listKeys, saveKey } from '../api/client';
 
 export default function SettingsPanel() {
-  const [geminiKey, setGeminiKey] = useState('');
   const [wikiPass, setWikiPass] = useState('');
   const [status, setStatus] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     listKeys().then(setStatus).catch(() => {});
   }, []);
-
-  const handleSaveGemini = async () => {
-    await saveKey('GEMINI', geminiKey);
-    message.success('Gemini API 키가 저장되었습니다');
-    const updated = await listKeys();
-    setStatus(updated);
-    setGeminiKey('');
-  };
 
   const handleSaveWikiPass = async () => {
     await saveKey('WIKI_AGENT_PASSWORD', wikiPass);
@@ -27,38 +18,9 @@ export default function SettingsPanel() {
     setWikiPass('');
   };
 
-  const handleValidate = async () => {
-    try {
-      await validateKey('GEMINI');
-      message.success('Gemini API 키가 유효합니다');
-    } catch {
-      // 에러는 interceptor에서 처리
-    }
-  };
-
   return (
-    <Card title="API 설정" size="small">
+    <Card title="연동 설정" size="small">
       <Form layout="vertical" size="small">
-        <Form.Item
-          label={
-            <Space>
-              Gemini API Key
-              {status.gemini ? <Tag color="green">등록됨</Tag> : <Tag color="red">미등록</Tag>}
-            </Space>
-          }
-          extra="LLM 및 임베딩 공용 Google Gemini API 키"
-        >
-          <Space.Compact style={{ width: '100%' }}>
-            <Input.Password
-              value={geminiKey}
-              onChange={(e) => setGeminiKey(e.target.value)}
-              placeholder="AIza..."
-            />
-            <Button onClick={handleSaveGemini} disabled={!geminiKey}>저장</Button>
-            <Button onClick={handleValidate}>검증</Button>
-          </Space.Compact>
-        </Form.Item>
-
         <Form.Item
           label={
             <Space>

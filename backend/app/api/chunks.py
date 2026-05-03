@@ -28,7 +28,7 @@ from app.security.auth_deps import require_admin
 
 
 def _get_llm(api_token: str, db: Session) -> LLMClient:
-    token = api_token
+    token = api_token or os.environ.get("GEMINI_API_KEY", "")
     if not token:
         setting = db.get(AppSetting, "gemini_token")
         if setting and setting.value:

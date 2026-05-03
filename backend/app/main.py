@@ -34,6 +34,49 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.error("임베딩 모델 워밍업 실패 (앱은 계속 실행): %s", exc)
 
+    # Railway 재배포 시 ChromaDB 소실 → DB의 indexed 문서로 자동 재인덱싱
+    try:
+        from app.database import _get_session_local
+        from app.models.db_models import Document
+        from app.modules import vector_store
+        from app.modules.md_chunker import md_chunker
+        from app.services.storage_service import get_storage
+
+        db = _get_session_local()()
+        try:
+            docs = db.query(Document).filter(Document.status == "indexed").all()
+            if docs:
+                collection = vector_store._get_collection()
+                chroma_count = collection.count()
+                db_count = sum(d.chunk_count or 0 for d in docs)
+
+                if chroma_count < db_count:
+                    logger.info("ChromaDB 소실 감지 (chroma=%d, db=%d) — 재인덱싱 시작", chroma_count, db_count)
+                    storage = get_storage()
+                    reindexed, errors = 0, 0
+                    for doc in docs:
+                        try:
+                            if not doc.markdown_path:
+                                continue
+                            md_bytes = storage.load(doc.markdown_path)
+                            vector_store.delete_doc(doc.id)
+                            chunks = md_chunker.chunk_from_text(md_bytes.decode("utf-8"), doc.id)
+                            count = vector_store.index_chunks(chunks)
+                            doc.chunk_count = count
+                            db.commit()
+                            reindexed += 1
+                            logger.info("재인덱싱 완료: %s (%d청크)", doc.original_name, count)
+                        except Exception as e:
+                            errors += 1
+                            logger.error("재인덱싱 실패: %s — %s", doc.original_name, e)
+                    logger.info("자동 재인덱싱 완료 — 성공: %d, 실패: %d", reindexed, errors)
+                else:
+                    logger.info("ChromaDB 정상 (chroma=%d, db=%d)", chroma_count, db_count)
+        finally:
+            db.close()
+    except Exception as exc:
+        logger.error("자동 재인덱싱 실패 (앱은 계속 실행): %s", exc)
+
     yield
 
 

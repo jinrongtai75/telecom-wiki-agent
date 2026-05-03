@@ -112,7 +112,7 @@ class SupabaseStorageService(StorageService):
             headers={**self._headers, "x-upsert": "true", "Content-Type": content_type},
         )
         if r.status_code not in (200, 201):
-            r.raise_for_status()
+            raise ValueError(f"Supabase {r.status_code}: {r.text[:300]}")
 
     def load(self, key: str) -> bytes:
         r = self._client.get(self._object_url(key), headers=self._headers)

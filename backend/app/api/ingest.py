@@ -188,6 +188,7 @@ def migrate_storage(
     docs = db.query(Document).filter(Document.status == "indexed").all()
     reindexed: list[dict] = []
     pdf_migrated: list[str] = []
+    storage_errors: list[dict] = []
     errors: list[dict] = []
 
     for doc in docs:
@@ -200,9 +201,9 @@ def migrate_storage(
                 md_bytes = local.load(md_key)
                 if is_cloud:
                     try:
-                        cloud.save(md_key, md_bytes)  # 로컬 → Supabase 이전
-                    except Exception:
-                        pass  # 스토리지 이전 실패해도 재인덱싱은 계속
+                        cloud.save(md_key, md_bytes)
+                    except Exception as se:
+                        storage_errors.append({"name": doc.original_name, "key": md_key, "error": str(se)})
             elif is_cloud:
                 try:
                     md_bytes = cloud.load(md_key)
@@ -213,7 +214,7 @@ def migrate_storage(
                 errors.append({"name": doc.original_name, "error": "MD 파일 없음 — 전처리 에이전트에서 재적재 필요"})
                 continue
 
-            # ChromaDB 재인덱싱
+            # ChromaDB 재인덱싱 (스토리지 이전 실패해도 계속 진행)
             vector_store.delete_doc(doc.id)
             chunks = md_chunker.chunk_from_text(md_bytes.decode("utf-8"), doc.id)
             chunk_count = vector_store.index_chunks(chunks)
@@ -229,8 +230,8 @@ def migrate_storage(
                     try:
                         cloud.save(pdf_key, local.load(pdf_key))
                         pdf_migrated.append(doc.original_name)
-                    except Exception:
-                        pass
+                    except Exception as se:
+                        storage_errors.append({"name": doc.original_name, "key": pdf_key, "error": str(se)})
 
         except Exception as e:
             errors.append({"name": doc.original_name, "error": str(e)})
@@ -239,7 +240,9 @@ def migrate_storage(
         "reindexed": len(reindexed),
         "pdf_migrated": len(pdf_migrated),
         "errors": len(errors),
+        "storage_errors": len(storage_errors),
         "results": reindexed,
         "pdf_files": pdf_migrated,
         "error_details": errors,
+        "storage_error_details": storage_errors,
     }

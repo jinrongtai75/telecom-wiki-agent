@@ -35,7 +35,7 @@ def generate_answer(
     else:
         prompt = _build_fallback_prompt(question)
 
-    return llm_client.complete(prompt, system=SYSTEM_PROMPT, max_tokens=3000)
+    return llm_client.complete(prompt, system=SYSTEM_PROMPT)
 
 
 def extract_keywords(question: str, llm_client: LLMClient) -> list[str]:

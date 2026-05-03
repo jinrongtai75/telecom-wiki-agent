@@ -30,11 +30,14 @@ class LLMClient:
     def __init__(self, provider: str = "gemini", api_token: str = ""):
         self.api_token = api_token
 
-    def complete(self, prompt: str, system: str = "", max_tokens: int = 2000) -> str:
+    def complete(self, prompt: str, system: str = "", max_tokens: int = 8192) -> str:
         full_prompt = f"{system}\n\n{prompt}" if system else prompt
         body = {
             "contents": [{"parts": [{"text": full_prompt}]}],
-            "generationConfig": {"maxOutputTokens": max_tokens},
+            "generationConfig": {
+                "maxOutputTokens": max_tokens,
+                "thinkingConfig": {"thinkingBudget": 0},
+            },
         }
         resp = _post_with_retry(
             f"{self._GEMINI_URL}?key={self.api_token}",
@@ -44,11 +47,14 @@ class LLMClient:
         data = resp.json()
         return data["candidates"][0]["content"]["parts"][0]["text"].strip()
 
-    def complete_stream(self, prompt: str, system: str = "", max_tokens: int = 2000) -> Iterator[str]:
+    def complete_stream(self, prompt: str, system: str = "", max_tokens: int = 8192) -> Iterator[str]:
         full_prompt = f"{system}\n\n{prompt}" if system else prompt
         body = {
             "contents": [{"parts": [{"text": full_prompt}]}],
-            "generationConfig": {"maxOutputTokens": max_tokens},
+            "generationConfig": {
+                "maxOutputTokens": max_tokens,
+                "thinkingConfig": {"thinkingBudget": 0},
+            },
         }
         try:
             with httpx.stream(

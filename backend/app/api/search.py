@@ -207,7 +207,7 @@ def search_stream(
             else:
                 prompt = answer_gen._build_fallback_prompt(req.question)
 
-            for token in llm.complete_stream(prompt, system=answer_gen.SYSTEM_PROMPT, max_tokens=3000):
+            for token in llm.complete_stream(prompt, system=answer_gen.SYSTEM_PROMPT):
                 full_answer += token
                 yield f"data: {json.dumps({'type':'token','data':token}, ensure_ascii=False)}\n\n"
         except Exception as e:

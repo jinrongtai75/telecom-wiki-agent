@@ -10,6 +10,15 @@ const silentApi = axios.create({ baseURL: BASE_URL });
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
+    // 404 문서/객체 없음 → 재업로드 안내 (서버 재시작 시 인메모리 상태 소실)
+    if (err.response?.status === 404) {
+      const detail = err.response?.data?.detail ?? '';
+      const detailStr = typeof detail === 'string' ? detail : JSON.stringify(detail);
+      if (detailStr.includes('문서') || detailStr.includes('객체') || detailStr.includes('Document') || detailStr.includes('Object')) {
+        message.error('서버에서 문서를 찾을 수 없습니다. PDF를 다시 업로드해주세요.');
+        return Promise.reject(err);
+      }
+    }
     let detail: string = err.message;
     if (err.response?.data instanceof Blob) {
       try {

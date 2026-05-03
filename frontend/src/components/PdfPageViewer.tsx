@@ -312,7 +312,10 @@ interface PdfPageViewerProps {
   selectMode: boolean
   onChunkSelect: (chunk: ParsedChunkInfo) => void
   onRegionSelect: (region: RegionSelection) => void
+  apiBase?: string             // 백엔드 URL (Vercel rewrite 우회용, 기본값: VITE_API_URL)
 }
+
+const DEFAULT_API_BASE = import.meta.env.VITE_API_URL ?? ''
 
 export default function PdfPageViewer({
   docId,
@@ -322,6 +325,7 @@ export default function PdfPageViewer({
   selectMode,
   onChunkSelect,
   onRegionSelect,
+  apiBase = DEFAULT_API_BASE,
 }: PdfPageViewerProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const pageEls    = useRef<Record<number, HTMLDivElement>>({})
@@ -358,7 +362,7 @@ export default function PdfPageViewer({
     ;(async () => {
       try {
         const token = sessionStorage.getItem('access_token') ?? ''
-        const res = await fetch(`/api/documents/${docId}/file`, {
+        const res = await fetch(`${apiBase}/api/documents/${docId}/file`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)

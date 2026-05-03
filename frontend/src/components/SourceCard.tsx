@@ -1,54 +1,19 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import type { SourceInfo } from '../types'
-
-const API_BASE = import.meta.env.VITE_API_URL ?? ''
-
-function useAuthImage(url: string | null, enabled: boolean) {
-  const [blobUrl, setBlobUrl] = useState<string | null>(null)
-  const [error, setError] = useState(false)
-
-  useEffect(() => {
-    if (!enabled || !url) return
-    setBlobUrl(null)
-    setError(false)
-
-    const token = sessionStorage.getItem('access_token') ?? ''
-    fetch(`${API_BASE}${url}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`)
-        return r.blob()
-      })
-      .then((blob) => setBlobUrl(URL.createObjectURL(blob)))
-      .catch(() => setError(true))
-
-    return () => {
-      setBlobUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return null })
-    }
-  }, [url, enabled])
-
-  return { blobUrl, error }
-}
+import PdfPageViewer from './PdfPageViewer'
 
 export default function SourceCard({ source, dark = false }: { source: SourceInfo; dark?: boolean }) {
   const [previewOpen, setPreviewOpen] = useState(false)
 
-  const pagePreviewUrl =
-    !source.from_3gpp && source.doc_id && source.page > 0
-      ? `/api/documents/${source.doc_id}/page/${source.page}`
-      : null
-
   const externalUrl = source.from_3gpp && source.section ? source.section : null
-  const isClickable = !!(pagePreviewUrl || externalUrl)
+  const hasPdfPreview = !source.from_3gpp && !!source.doc_id
 
-  // 모달이 열릴 때만 이미지 fetch (인증 헤더 포함)
-  const { blobUrl, error } = useAuthImage(pagePreviewUrl, previewOpen)
+  const isClickable = !!(externalUrl || hasPdfPreview)
 
   const handleClick = () => {
     if (externalUrl) {
       window.open(externalUrl, '_blank', 'noopener,noreferrer')
-    } else if (pagePreviewUrl) {
+    } else if (hasPdfPreview) {
       setPreviewOpen(true)
     }
   }
@@ -62,9 +27,8 @@ export default function SourceCard({ source, dark = false }: { source: SourceInf
       <div
         className={cardClass}
         onClick={isClickable ? handleClick : undefined}
-        title={externalUrl ? '클릭하여 3GPP 규격 열기' : pagePreviewUrl ? '클릭하여 페이지 미리보기' : undefined}
+        title={externalUrl ? '클릭하여 3GPP 규격 열기' : hasPdfPreview ? '클릭하여 문서 미리보기' : undefined}
       >
-        {/* 썸네일: 저장된 이미지만 표시 (페이지 썸네일은 인증 문제로 제거) */}
         {source.image_path && (
           <img
             src={source.image_path}
@@ -89,51 +53,48 @@ export default function SourceCard({ source, dark = false }: { source: SourceInf
           <div className="mt-1 flex items-center gap-2">
             <span className={`text-xs ${dark ? 'text-gray-600' : 'text-gray-400'}`}>관련도 {Math.round(source.score * 100)}%</span>
             {externalUrl && <span className="text-xs text-[#E6007E]">규격 열기 →</span>}
-            {pagePreviewUrl && <span className="text-xs text-[#E6007E]">미리보기 →</span>}
+            {hasPdfPreview && <span className="text-xs text-[#E6007E]">미리보기 →</span>}
           </div>
         </div>
       </div>
 
-      {/* 페이지 미리보기 모달 */}
-      {previewOpen && pagePreviewUrl && (
+      {/* PDF 전체 문서 뷰어 모달 */}
+      {previewOpen && source.doc_id && (
         <div
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-3"
           onClick={() => setPreviewOpen(false)}
         >
           <div
-            className="bg-[#1e1e35] border border-white/10 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-auto"
+            className="bg-[#1e1e35] border border-white/10 rounded-xl shadow-2xl flex flex-col"
+            style={{ width: '90vw', height: '92vh' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-3 border-b border-white/10">
-              <div>
+            {/* 헤더 */}
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 flex-shrink-0">
+              <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-200 truncate">{source.filename}</p>
-                <p className="text-xs text-gray-500">p.{source.page} · 관련도 {Math.round(source.score * 100)}%</p>
+                <p className="text-xs text-gray-500">p.{source.page} 위치에서 열기 · 관련도 {Math.round(source.score * 100)}%</p>
               </div>
               <button
                 onClick={() => setPreviewOpen(false)}
-                className="text-gray-500 hover:text-gray-300 text-xl leading-none px-2"
+                className="text-gray-500 hover:text-gray-300 text-2xl leading-none pl-4 flex-shrink-0"
               >
                 ×
               </button>
             </div>
-            <div className="p-3 flex items-center justify-center min-h-40">
-              {!blobUrl && !error && (
-                <div className="flex gap-1.5">
-                  <span className="w-2 h-2 bg-[#E6007E]/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-2 h-2 bg-[#E6007E]/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-2 h-2 bg-[#E6007E]/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-              )}
-              {error && (
-                <p className="text-sm text-gray-500">페이지 이미지를 불러올 수 없습니다</p>
-              )}
-              {blobUrl && (
-                <img
-                  src={blobUrl}
-                  alt={`${source.filename} p.${source.page}`}
-                  className="w-full rounded"
-                />
-              )}
+
+            {/* PDF 뷰어 */}
+            <div className="flex-1 overflow-hidden">
+              <PdfPageViewer
+                docId={source.doc_id}
+                totalPages={0}
+                chunks={[]}
+                selectedChunkId={null}
+                scrollToPage={source.page}
+                selectMode={false}
+                onChunkSelect={() => {}}
+                onRegionSelect={() => {}}
+              />
             </div>
           </div>
         </div>

@@ -69,6 +69,15 @@ export const addManualObject = async (
   return data as { object: DocumentObject; objects: DocumentObject[] };
 };
 
+function parseContentDispositionFilename(cd: string): string | null {
+  const rfc5987 = cd.match(/filename\*=UTF-8''([^;\s]+)/i)
+  if (rfc5987) {
+    try { return decodeURIComponent(rfc5987[1]) } catch { /* ignore */ }
+  }
+  const simple = cd.match(/filename="(.+?)"/)
+  return simple ? simple[1] : null
+}
+
 export const exportDocument = async (
   docId: string,
   force = false,
@@ -83,9 +92,12 @@ export const exportDocument = async (
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  const cd = res.headers['content-disposition'] || '';
-  const match = cd.match(/filename="(.+?)"/);
-  a.download = match ? match[1] : 'document.md';
+  // 전달된 filename 우선 사용, 없으면 헤더 파싱 (RFC 5987 + simple 형식 모두 지원)
+  let downloadName = filename ? (filename.endsWith('.md') ? filename : `${filename}.md`) : ''
+  if (!downloadName) {
+    downloadName = parseContentDispositionFilename(res.headers['content-disposition'] || '') ?? 'document.md'
+  }
+  a.download = downloadName;
   a.click();
   URL.revokeObjectURL(url);
 };
@@ -97,8 +109,7 @@ export const exportDocumentContent = async (docId: string, force = false): Promi
     responseType: 'text',
   });
   const cd = res.headers['content-disposition'] || '';
-  const match = cd.match(/filename="(.+?)"/);
-  return { content: res.data as string, filename: match ? match[1] : 'document.md' };
+  return { content: res.data as string, filename: parseContentDispositionFilename(cd) ?? 'document.md' };
 };
 
 // ── Wiki Agent RAG 적재 (전처리 백엔드 프록시 경유) ──────────────────────────

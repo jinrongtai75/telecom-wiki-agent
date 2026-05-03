@@ -183,15 +183,16 @@ text = call_vlm(image_b64, prompt)   # image_b64: data URI 또는 순수 base64
 
 ## Vercel 배포 전략
 
-**메인 프론트엔드** (`telecom-wiki-agent` 프로젝트, rootDirectory: `frontend`)
-- 반드시 **repo root**에서 배포: `vercel --prod`
-- root `.vercel/project.json` → `prj_6e9Nkkhn7p4igH0rTrEoz5iniL82`
+**메인·전처리 프론트엔드 모두 `git push origin main` 한 번으로 자동 배포된다.**
 
-**전처리 프론트엔드** (`telecom-wiki-agent-kbbr` 프로젝트, rootDirectory: `preprocessor/frontend`)
-- GitHub push로 자동 배포 (Vercel 프로젝트 설정에 rootDirectory 명시됨)
-- CLI 직접 배포 시에도 repo root에서 수행해야 이중 경로 오류 없음
+| 프로젝트 | rootDirectory | 프로덕션 브랜치 |
+|---------|--------------|--------------|
+| `telecom-wiki-agent` (메인) | `frontend` | `main` |
+| `telecom-wiki-agent-kbbr` (전처리) | `preprocessor/frontend` | `main` |
 
-> 사내 SSL 프록시 환경에서 Vercel CLI 사용 시 `NODE_TLS_REJECT_UNAUTHORIZED=0` 필요
+- 두 프로젝트 모두 GitHub `main` 브랜치 push → Vercel 자동 빌드·배포
+- `npx vercel --prod` CLI 수동 배포는 불필요 (긴급 핫픽스 시에만 사용)
+- 사내 SSL 프록시 환경에서 CLI 사용 시 `NODE_TLS_REJECT_UNAUTHORIZED=0` 필요
 
 ## 데이터 저장 위치 (메인 백엔드)
 

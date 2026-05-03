@@ -1,19 +1,49 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { SourceInfo } from '../types'
+
+const API_BASE = import.meta.env.VITE_API_URL ?? ''
+
+function useAuthImage(url: string | null, enabled: boolean) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    if (!enabled || !url) return
+    setBlobUrl(null)
+    setError(false)
+
+    const token = sessionStorage.getItem('access_token') ?? ''
+    fetch(`${API_BASE}${url}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.blob()
+      })
+      .then((blob) => setBlobUrl(URL.createObjectURL(blob)))
+      .catch(() => setError(true))
+
+    return () => {
+      setBlobUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return null })
+    }
+  }, [url, enabled])
+
+  return { blobUrl, error }
+}
 
 export default function SourceCard({ source, dark = false }: { source: SourceInfo; dark?: boolean }) {
   const [previewOpen, setPreviewOpen] = useState(false)
 
-  // 내부 PDF 페이지 미리보기 URL
   const pagePreviewUrl =
     !source.from_3gpp && source.doc_id && source.page > 0
       ? `/api/documents/${source.doc_id}/page/${source.page}`
       : null
 
-  // 3GPP 외부 링크 URL
   const externalUrl = source.from_3gpp && source.section ? source.section : null
-
   const isClickable = !!(pagePreviewUrl || externalUrl)
+
+  // 모달이 열릴 때만 이미지 fetch (인증 헤더 포함)
+  const { blobUrl, error } = useAuthImage(pagePreviewUrl, previewOpen)
 
   const handleClick = () => {
     if (externalUrl) {
@@ -34,21 +64,14 @@ export default function SourceCard({ source, dark = false }: { source: SourceInf
         onClick={isClickable ? handleClick : undefined}
         title={externalUrl ? '클릭하여 3GPP 규격 열기' : pagePreviewUrl ? '클릭하여 페이지 미리보기' : undefined}
       >
-        {/* 저장된 이미지 또는 페이지 썸네일 */}
-        {source.image_path ? (
+        {/* 썸네일: 저장된 이미지만 표시 (페이지 썸네일은 인증 문제로 제거) */}
+        {source.image_path && (
           <img
             src={source.image_path}
             alt="출처 이미지"
             className="w-16 h-16 object-cover rounded flex-shrink-0 border"
           />
-        ) : pagePreviewUrl ? (
-          <img
-            src={pagePreviewUrl}
-            alt={`p.${source.page}`}
-            className="w-16 h-16 object-cover rounded flex-shrink-0 border bg-white"
-            loading="lazy"
-          />
-        ) : null}
+        )}
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
@@ -65,12 +88,8 @@ export default function SourceCard({ source, dark = false }: { source: SourceInf
           )}
           <div className="mt-1 flex items-center gap-2">
             <span className={`text-xs ${dark ? 'text-gray-600' : 'text-gray-400'}`}>관련도 {Math.round(source.score * 100)}%</span>
-            {externalUrl && (
-              <span className="text-xs text-[#E6007E]">규격 열기 →</span>
-            )}
-            {pagePreviewUrl && (
-              <span className="text-xs text-[#E6007E]">미리보기 →</span>
-            )}
+            {externalUrl && <span className="text-xs text-[#E6007E]">규격 열기 →</span>}
+            {pagePreviewUrl && <span className="text-xs text-[#E6007E]">미리보기 →</span>}
           </div>
         </div>
       </div>
@@ -78,31 +97,43 @@ export default function SourceCard({ source, dark = false }: { source: SourceInf
       {/* 페이지 미리보기 모달 */}
       {previewOpen && pagePreviewUrl && (
         <div
-          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
           onClick={() => setPreviewOpen(false)}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-auto"
+            className="bg-[#1e1e35] border border-white/10 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-3 border-b">
+            <div className="flex items-center justify-between p-3 border-b border-white/10">
               <div>
-                <p className="text-sm font-medium text-gray-800 truncate">{source.filename}</p>
+                <p className="text-sm font-medium text-gray-200 truncate">{source.filename}</p>
                 <p className="text-xs text-gray-500">p.{source.page} · 관련도 {Math.round(source.score * 100)}%</p>
               </div>
               <button
                 onClick={() => setPreviewOpen(false)}
-                className="text-gray-400 hover:text-gray-600 text-xl leading-none px-2"
+                className="text-gray-500 hover:text-gray-300 text-xl leading-none px-2"
               >
                 ×
               </button>
             </div>
-            <div className="p-2">
-              <img
-                src={pagePreviewUrl}
-                alt={`${source.filename} p.${source.page}`}
-                className="w-full rounded"
-              />
+            <div className="p-3 flex items-center justify-center min-h-40">
+              {!blobUrl && !error && (
+                <div className="flex gap-1.5">
+                  <span className="w-2 h-2 bg-[#E6007E]/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 bg-[#E6007E]/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 bg-[#E6007E]/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              )}
+              {error && (
+                <p className="text-sm text-gray-500">페이지 이미지를 불러올 수 없습니다</p>
+              )}
+              {blobUrl && (
+                <img
+                  src={blobUrl}
+                  alt={`${source.filename} p.${source.page}`}
+                  className="w-full rounded"
+                />
+              )}
             </div>
           </div>
         </div>

@@ -115,3 +115,50 @@ def ingest_md(
         indexed_at=doc.indexed_at.isoformat() if doc.indexed_at else "",
         has_pdf=has_pdf,
     )
+
+
+@router.post("/reindex-all", status_code=200)
+def reindex_all(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    저장된 MD 파일로 전체 재인덱싱 (임베딩 모델 변경 후 사용).
+    관리자 전용. /api/settings/vector-store/reset 실행 후 호출하세요.
+    """
+    if not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="관리자만 실행 가능합니다")
+
+    storage = get_storage()
+    docs = db.query(Document).filter(Document.status == "indexed").all()
+
+    reindexed: list[dict] = []
+    errors: list[dict] = []
+
+    for doc in docs:
+        try:
+            if not doc.markdown_path:
+                errors.append({"doc_id": doc.id, "name": doc.original_name, "error": "MD 파일 경로 없음"})
+                continue
+
+            md_bytes = storage.load(doc.markdown_path)
+            content = md_bytes.decode("utf-8")
+
+            vector_store.delete_doc(doc.id)
+            index_chunks = md_chunker.chunk_from_text(content, doc.id)
+            chunk_count = vector_store.index_chunks(index_chunks)
+
+            doc.chunk_count = chunk_count
+            doc.indexed_at = datetime.now(UTC)
+            db.commit()
+
+            reindexed.append({"doc_id": doc.id, "name": doc.original_name, "chunks": chunk_count})
+        except Exception as e:
+            errors.append({"doc_id": doc.id, "name": doc.original_name, "error": str(e)})
+
+    return {
+        "reindexed": len(reindexed),
+        "errors": len(errors),
+        "results": reindexed,
+        "error_details": errors,
+    }

@@ -34,16 +34,14 @@ def search(
 ):
     llm = LLMClient(api_token=_resolve_token(req.api_token, db))
 
-    # 1. 키워드 추출 (한국어 질문 최적화)
+    # 1. 키워드 추출 (3GPP 폴백 전용)
     try:
         keywords = answer_gen.extract_keywords(req.question, llm)
-        search_query = " ".join(keywords) if keywords else req.question
     except Exception:
-        search_query = req.question
         keywords = req.question.split()[:5]
 
-    # 2. ChromaDB 의미 검색
-    chunks = vector_store.search(search_query, top_k=settings.search_top_k)
+    # 2. ChromaDB 의미 검색 — 원문 질문으로 검색 (한국어 임베딩 일치)
+    chunks = vector_store.search(req.question, top_k=settings.search_top_k)
 
     # 3. 관련성 판단
     relevant_chunks = [c for c in chunks if c["score"] >= settings.relevance_threshold]
@@ -146,15 +144,13 @@ def search_stream(
     llm = LLMClient(api_token=_resolve_token(req.api_token, db))
 
     def event_stream():
-        # 1. 키워드 추출 + ChromaDB 검색
+        # 1. 키워드 추출 (3GPP 폴백 전용) + ChromaDB 검색
         try:
             keywords = answer_gen.extract_keywords(req.question, llm)
-            search_query = " ".join(keywords) if keywords else req.question
         except Exception:
-            search_query = req.question
             keywords = req.question.split()[:5]
 
-        chunks = vector_store.search(search_query, top_k=settings.search_top_k)
+        chunks = vector_store.search(req.question, top_k=settings.search_top_k)
         relevant_chunks = [c for c in chunks if c["score"] >= settings.relevance_threshold]
         from_3gpp = False
         threegpp_results = None

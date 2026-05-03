@@ -138,8 +138,7 @@ def index_chunks(chunks: list[IndexChunk]) -> int:
     collection = _get_collection()
 
     ids = [c.id for c in chunks]
-    # e5 모델: 문서는 "passage: " 접두사
-    documents = [f"passage: {c.content}" for c in chunks]
+    documents = [c.content for c in chunks]
     metadatas = [
         {
             "doc_id": c.doc_id,
@@ -177,7 +176,7 @@ def search(query: str, top_k: int | None = None, doc_id: str | None = None) -> l
 
     where = {"doc_id": doc_id} if doc_id else None
     results = collection.query(
-        query_texts=[f"query: {query}"],
+        query_texts=[query],
         n_results=top_k,
         where=where,
         include=["documents", "metadatas", "distances"],
@@ -195,7 +194,7 @@ def search(query: str, top_k: int | None = None, doc_id: str | None = None) -> l
         # cosine distance → similarity (1 - distance)
         score = 1.0 - dist
         # "passage: " 접두사 제거
-        content = doc[len("passage: "):] if doc.startswith("passage: ") else doc
+        content = doc
         hits.append({
             "content": content,
             "doc_id": meta.get("doc_id", ""),

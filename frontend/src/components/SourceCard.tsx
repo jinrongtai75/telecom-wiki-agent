@@ -4,22 +4,35 @@ import type { SourceInfo } from '../types'
 export default function SourceCard({ source, dark = false }: { source: SourceInfo; dark?: boolean }) {
   const [previewOpen, setPreviewOpen] = useState(false)
 
-  // PDF 페이지 미리보기 URL (doc_id + page_num)
+  // 내부 PDF 페이지 미리보기 URL
   const pagePreviewUrl =
     !source.from_3gpp && source.doc_id && source.page > 0
       ? `/api/documents/${source.doc_id}/page/${source.page}`
       : null
 
+  // 3GPP 외부 링크 URL
+  const externalUrl = source.from_3gpp && source.section ? source.section : null
+
+  const isClickable = !!(pagePreviewUrl || externalUrl)
+
+  const handleClick = () => {
+    if (externalUrl) {
+      window.open(externalUrl, '_blank', 'noopener,noreferrer')
+    } else if (pagePreviewUrl) {
+      setPreviewOpen(true)
+    }
+  }
+
   const cardClass = dark
-    ? 'flex items-start gap-3 p-3 bg-white/5 rounded-lg border border-white/10 cursor-pointer hover:bg-white/10 hover:border-white/20 transition-colors'
-    : 'flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors'
+    ? `flex items-start gap-3 p-3 bg-white/5 rounded-lg border border-white/10 transition-colors ${isClickable ? 'cursor-pointer hover:bg-white/10 hover:border-white/20' : ''}`
+    : `flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 transition-colors ${isClickable ? 'cursor-pointer hover:bg-gray-100' : ''}`
 
   return (
     <>
       <div
         className={cardClass}
-        onClick={() => pagePreviewUrl && setPreviewOpen(true)}
-        title={pagePreviewUrl ? '클릭하여 페이지 미리보기' : undefined}
+        onClick={isClickable ? handleClick : undefined}
+        title={externalUrl ? '클릭하여 3GPP 규격 열기' : pagePreviewUrl ? '클릭하여 페이지 미리보기' : undefined}
       >
         {/* 저장된 이미지 또는 페이지 썸네일 */}
         {source.image_path ? (
@@ -52,6 +65,9 @@ export default function SourceCard({ source, dark = false }: { source: SourceInf
           )}
           <div className="mt-1 flex items-center gap-2">
             <span className={`text-xs ${dark ? 'text-gray-600' : 'text-gray-400'}`}>관련도 {Math.round(source.score * 100)}%</span>
+            {externalUrl && (
+              <span className="text-xs text-[#E6007E]">규격 열기 →</span>
+            )}
             {pagePreviewUrl && (
               <span className="text-xs text-[#E6007E]">미리보기 →</span>
             )}

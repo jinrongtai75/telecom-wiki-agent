@@ -116,7 +116,7 @@ class SupabaseStorageService(StorageService):
 
     def load(self, key: str) -> bytes:
         r = self._client.get(self._object_url(key), headers=self._headers)
-        if r.status_code == 404:
+        if r.status_code in (400, 404):
             raise FileNotFoundError(f"Storage key not found: {key}")
         r.raise_for_status()
         return r.content

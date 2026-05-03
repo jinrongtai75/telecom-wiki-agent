@@ -182,9 +182,6 @@ def migrate_storage(
     cloud = get_storage()
     is_cloud = not isinstance(cloud, LocalStorageService)
 
-    # ChromaDB 리셋 (Gemini 임베딩 공간으로 재초기화)
-    vector_store.reset_collection()
-
     docs = db.query(Document).filter(Document.status == "indexed").all()
     reindexed: list[dict] = []
     pdf_migrated: list[str] = []

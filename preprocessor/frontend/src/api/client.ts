@@ -37,12 +37,12 @@ export const uploadDocument = async (file: File) => {
 
 
 export const getNoiseCandidates = async (docId: string) => {
-  const { data } = await api.get(`/api/documents/${docId}/denoise/candidates`);
+  const { data } = await silentApi.get(`/api/documents/${docId}/denoise/candidates`);
   return data as { candidates: { text: string; count: number; object_ids: string[] }[] };
 };
 
 export const denoise = async (docId: string, payload?: { delete_ids?: string[]; patterns?: NoisePatterns }) => {
-  const { data } = await api.post(`/api/documents/${docId}/denoise`, payload ?? null);
+  const { data } = await silentApi.post(`/api/documents/${docId}/denoise`, payload ?? null);
   return data as { objects: DocumentObject[] };
 };
 
@@ -206,12 +206,12 @@ export const setHeading = async (docId: string, objId: string, is_heading: boole
 };
 
 export const deleteObject = async (docId: string, objId: string) => {
-  const { data } = await api.delete(`/api/objects/${docId}/${objId}`);
+  const { data } = await silentApi.delete(`/api/objects/${docId}/${objId}`);
   return data as { objects: DocumentObject[] };
 };
 
 export const deleteObjects = async (docId: string, ids: string[]) => {
-  const { data } = await api.post(`/api/documents/${docId}/denoise`, { delete_ids: ids });
+  const { data } = await silentApi.post(`/api/documents/${docId}/denoise`, { delete_ids: ids });
   return data as { objects: DocumentObject[] };
 };
 

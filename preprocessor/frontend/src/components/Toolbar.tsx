@@ -62,15 +62,23 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
   const handleFindCandidates = async () => {
     if (!docId) return message.warning('문서를 먼저 업로드해주세요');
     await wrap(async () => {
-      const res = await getNoiseCandidates(docId);
-      setNoiseCandidates(res.candidates);
-      if (res.candidates.length === 0) {
-        message.info('노이즈 후보가 없습니다');
-      } else {
-        const allIds = res.candidates.flatMap((c) => c.object_ids);
-        setCheckedIds(new Set(allIds));
+      try {
+        const res = await getNoiseCandidates(docId);
+        setNoiseCandidates(res.candidates);
+        if (res.candidates.length === 0) {
+          message.info('노이즈 후보가 없습니다');
+        } else {
+          const allIds = res.candidates.flatMap((c) => c.object_ids);
+          setCheckedIds(new Set(allIds));
+        }
+        setNoiseOpen(true);
+      } catch (err: any) {
+        if (err?.response?.status === 404) {
+          message.error('서버에서 문서를 찾을 수 없습니다. PDF를 다시 업로드해주세요.');
+        } else {
+          message.error(err?.response?.data?.detail || err?.message || '노이즈 후보 조회 실패');
+        }
       }
-      setNoiseOpen(true);
     });
   };
 
@@ -78,15 +86,21 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
     if (!docId) return message.warning('문서를 먼저 업로드해주세요');
     if (checkedIds.size === 0) return message.warning('제거할 항목을 선택해주세요');
     await wrap(async () => {
-      const res = await denoise(docId, {
-        delete_ids: [...checkedIds],
-      });
-      onObjectsUpdated(res.objects);
-      setNoiseCandidates([]);
-      setCheckedIds(new Set());
-      setContainsInput('');
-      setNoiseOpen(false);
-      message.success('노이즈 제거 완료');
+      try {
+        const res = await denoise(docId, { delete_ids: [...checkedIds] });
+        onObjectsUpdated(res.objects);
+        setNoiseCandidates([]);
+        setCheckedIds(new Set());
+        setContainsInput('');
+        setNoiseOpen(false);
+        message.success('노이즈 제거 완료');
+      } catch (err: any) {
+        if (err?.response?.status === 404) {
+          message.error('서버에서 문서를 찾을 수 없습니다. PDF를 다시 업로드해주세요.');
+        } else {
+          message.error(err?.response?.data?.detail || err?.message || '노이즈 제거 실패');
+        }
+      }
     });
   };
 

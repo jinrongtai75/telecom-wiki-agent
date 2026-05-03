@@ -1,5 +1,6 @@
 import io
 import json
+import re
 import pandas as pd
 
 from app.models import DocumentObject
@@ -38,6 +39,24 @@ class TableProcessor:
         )
         return call_llm(prompt, max_tokens=1000)
 
+    @staticmethod
+    def _parse_json(raw: str) -> dict:
+        """JSON 파싱 — 마크다운 코드블록 제거 및 정규식 fallback 포함."""
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            pass
+        # 정규식으로 JSON 객체 추출 (앞뒤 설명문 무시)
+        m = re.search(r'\{.*\}', raw, re.DOTALL)
+        if m:
+            try:
+                return json.loads(m.group())
+            except json.JSONDecodeError:
+                pass
+        raise ValueError(f"JSON 파싱 실패: {raw[:300]}")
+
     def review_with_vlm(self, image_b64: str, parsed_content: str) -> dict:
         """표 이미지와 파싱 결과를 비교해 단순하면 keep, 복잡하면 flatten 결과 반환"""
         prompt = (
@@ -53,10 +72,8 @@ class TableProcessor:
             "반드시 JSON만 출력하세요. 다른 설명은 금지."
         )
         try:
-            raw = call_vlm(image_b64, prompt, max_tokens=1500)
-            if raw.startswith("```"):
-                raw = raw.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
-            return json.loads(raw)
+            raw = call_vlm(image_b64, prompt, max_tokens=4000, json_mode=True)
+            return self._parse_json(raw)
         except Exception as e:
             raise RuntimeError(f"VLM API 호출 실패: {e}")
 
@@ -74,10 +91,8 @@ class TableProcessor:
             "반드시 JSON만 출력하세요. 다른 설명은 금지."
         )
         try:
-            raw = call_llm(prompt, max_tokens=1000)
-            if raw.startswith("```"):
-                raw = raw.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
-            return json.loads(raw)
+            raw = call_llm(prompt, max_tokens=4000, json_mode=True)
+            return self._parse_json(raw)
         except Exception as e:
             raise RuntimeError(f"LLM API 호출 실패: {e}")
 

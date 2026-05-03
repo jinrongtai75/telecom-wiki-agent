@@ -18,13 +18,16 @@ def _get_api_key() -> str:
     return key
 
 
-def call_llm(prompt: str, max_tokens: int = 1000) -> str:
+def call_llm(prompt: str, max_tokens: int = 1000, json_mode: bool = False) -> str:
     key = _get_api_key()
     if not key:
         raise RuntimeError("Gemini API 키가 설정되지 않았습니다. 설정 패널에서 입력하거나 GEMINI_API_KEY 환경변수를 설정하세요.")
+    gen_config: dict = {"maxOutputTokens": max_tokens}
+    if json_mode:
+        gen_config["responseMimeType"] = "application/json"
     body = {
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"maxOutputTokens": max_tokens},
+        "generationConfig": gen_config,
     }
     try:
         resp = httpx.post(f"{_GEMINI_URL}?key={key}", json=body, timeout=60)
@@ -36,7 +39,7 @@ def call_llm(prompt: str, max_tokens: int = 1000) -> str:
         raise RuntimeError(f"LLM API 호출 실패: {e}")
 
 
-def call_vlm(image_b64: str, prompt: str, max_tokens: int = 1000) -> str:
+def call_vlm(image_b64: str, prompt: str, max_tokens: int = 1000, json_mode: bool = False) -> str:
     """이미지 + 텍스트 VLM 호출.
     image_b64: 'data:image/png;base64,XXX' 형태의 data URI 또는 순수 base64 문자열 모두 허용.
     """
@@ -51,6 +54,10 @@ def call_vlm(image_b64: str, prompt: str, max_tokens: int = 1000) -> str:
         raw_b64 = image_b64
         media_type = "image/png"
 
+    gen_config: dict = {"maxOutputTokens": max_tokens}
+    if json_mode:
+        gen_config["responseMimeType"] = "application/json"
+
     body = {
         "contents": [
             {
@@ -60,7 +67,7 @@ def call_vlm(image_b64: str, prompt: str, max_tokens: int = 1000) -> str:
                 ]
             }
         ],
-        "generationConfig": {"maxOutputTokens": max_tokens},
+        "generationConfig": gen_config,
     }
     try:
         resp = httpx.post(f"{_GEMINI_URL}?key={key}", json=body, timeout=60)

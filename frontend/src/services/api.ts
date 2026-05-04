@@ -162,6 +162,12 @@ export const api = {
   validateKey: (service: string) =>
     client.post<{ valid: boolean }>('/settings/keys/validate', { service }),
 
+  getLlmMode: () =>
+    client.get<{ mode: string }>('/settings/llm-mode'),
+
+  setLlmMode: (mode: 'fast' | 'thinking') =>
+    client.post<{ mode: string }>('/settings/llm-mode', { mode }),
+
   tableReview: (docId: string, chunkId: string, apiToken = '') =>
     client.post<ParsedChunkInfo>(`/chunks/${docId}/${chunkId}/table/review`, { api_token: apiToken }),
 

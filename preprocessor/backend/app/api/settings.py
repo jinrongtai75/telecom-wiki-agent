@@ -2,6 +2,7 @@ import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.modules.api_key_manager import APIKeyManager
+from app.modules.llm_client import get_thinking_mode, set_thinking_mode
 
 router = APIRouter(prefix='/api/settings', tags=['settings'])
 key_mgr = APIKeyManager()
@@ -52,3 +53,18 @@ async def ping_gemini():
         return {"reachable": False, "error": "timeout (10s)"}
     except Exception as e:
         return {"reachable": False, "error": str(e)}
+
+
+class SetLlmModeRequest(BaseModel):
+    mode: str  # "fast" | "thinking"
+
+\[MASKED_EMAIL]('/llm-mode')
+async def get_llm_mode():
+    return {"mode": "thinking" if get_thinking_mode() else "fast"}
+
+\[MASKED_EMAIL]('/llm-mode')
+async def set_llm_mode(body: SetLlmModeRequest):
+    if body.mode not in ("fast", "thinking"):
+        raise HTTPException(status_code=400, detail="mode는 'fast' 또는 'thinking'이어야 합니다")
+    set_thinking_mode(body.mode == "thinking")
+    return {"mode": body.mode}

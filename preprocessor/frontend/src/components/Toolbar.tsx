@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import axios from 'axios';
 import {
   Button, Upload, Input, Space, message, Spin, Checkbox, Typography, Modal, Form, Tag,
 } from 'antd';
@@ -32,6 +33,10 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
   const [loading, setLoading] = useState(false);
   const [reviewingTable, setReviewingTable] = useState(false);
   const [reviewingImage, setReviewingImage] = useState(false);
+  const [tableProgress, setTableProgress] = useState<{ current: number; total: number } | null>(null);
+  const [imageProgress, setImageProgress] = useState<{ current: number; total: number } | null>(null);
+  const tableAbortRef = useRef<AbortController | null>(null);
+  const imageAbortRef = useRef<AbortController | null>(null);
   const [ingesting, setIngesting] = useState(false);
   const [ingestResult, setIngestResult] = useState<{ chunkCount: number } | null>(null);
   const [ragDocs, setRagDocs] = useState<RagDocument[] | null>(null);
@@ -168,13 +173,18 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
     if (targets.length === 0) return message.info('표 객체가 없습니다');
     const keys = await listKeys().catch(() => ({} as Record<string, boolean>));
     if (!keys.gemini) return message.error('Gemini API 키가 설정되지 않았습니다. 설정 패널에서 먼저 저장해주세요.');
+    const controller = new AbortController();
+    tableAbortRef.current = controller;
     setReviewingTable(true);
-    let kept = 0, flattened = 0, failed = 0;
+    setTableProgress({ current: 0, total: targets.length });
+    let kept = 0, flattened = 0, failed = 0, cancelled = false;
     const updatedObjects = [...objects];
     try {
-      for (const obj of targets) {
+      for (let i = 0; i < targets.length; i++) {
+        const obj = targets[i];
+        setTableProgress({ current: i + 1, total: targets.length });
         try {
-          const res = await reviewTable(docId, obj.id);
+          const res = await reviewTable(docId, obj.id, controller.signal);
           const idx = updatedObjects.findIndex((o) => o.id === obj.id);
           if (idx !== -1 && res.action === 'flatten') {
             updatedObjects[idx] = { ...updatedObjects[idx], processed_content: res.processed_content ?? undefined };
@@ -183,6 +193,7 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
             kept++;
           }
         } catch (err: any) {
+          if (axios.isCancel(err)) { cancelled = true; break; }
           if (err?.response?.status === 404) {
             message.error('서버에서 문서를 찾을 수 없습니다. PDF를 다시 업로드해주세요.');
             break;
@@ -191,9 +202,15 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
         }
       }
       onObjectsUpdated(updatedObjects);
-      message.success(`Table 검수 완료 — 유지: ${kept}, Flatten: ${flattened}${failed > 0 ? `, 실패: ${failed}` : ''}`);
+      if (cancelled) {
+        message.info(`Table 검수 취소됨 — 유지: ${kept}, Flatten: ${flattened}${failed > 0 ? `, 실패: ${failed}` : ''}`);
+      } else {
+        message.success(`Table 검수 완료 — 유지: ${kept}, Flatten: ${flattened}${failed > 0 ? `, 실패: ${failed}` : ''}`);
+      }
     } finally {
       setReviewingTable(false);
+      setTableProgress(null);
+      tableAbortRef.current = null;
     }
   };
 
@@ -203,14 +220,19 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
     if (targets.length === 0) return message.info('이미지 객체가 없습니다');
     const keys = await listKeys().catch(() => ({} as Record<string, boolean>));
     if (!keys.gemini) return message.error('Gemini API 키가 설정되지 않았습니다. 설정 패널에서 먼저 저장해주세요.');
+    const controller = new AbortController();
+    imageAbortRef.current = controller;
     setReviewingImage(true);
-    let saved = 0, described = 0, discarded = 0, failed = 0;
+    setImageProgress({ current: 0, total: targets.length });
+    let saved = 0, described = 0, discarded = 0, failed = 0, cancelled = false;
     let currentObjects = [...objects];
     try {
-      for (const obj of targets) {
+      for (let i = 0; i < targets.length; i++) {
+        const obj = targets[i];
         if (!currentObjects.find((o) => o.id === obj.id)) continue;
+        setImageProgress({ current: i + 1, total: targets.length });
         try {
-          const res = await reviewImage(docId, obj.id);
+          const res = await reviewImage(docId, obj.id, controller.signal);
           if (res.action === 'discard') {
             currentObjects = res.objects;
             discarded++;
@@ -224,6 +246,7 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
             described++;
           }
         } catch (err: any) {
+          if (axios.isCancel(err)) { cancelled = true; break; }
           if (err?.response?.status === 404) {
             message.error('서버에서 문서를 찾을 수 없습니다. PDF를 다시 업로드해주세요.');
             break;
@@ -232,9 +255,15 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
         }
       }
       onObjectsUpdated(currentObjects);
-      message.success(`Image 검수 완료 — 저장: ${saved}, 텍스트변환: ${described}, 삭제: ${discarded}${failed > 0 ? `, 실패: ${failed}` : ''}`);
+      if (cancelled) {
+        message.info(`Image 검수 취소됨 — 저장: ${saved}, 텍스트변환: ${described}, 삭제: ${discarded}${failed > 0 ? `, 실패: ${failed}` : ''}`);
+      } else {
+        message.success(`Image 검수 완료 — 저장: ${saved}, 텍스트변환: ${described}, 삭제: ${discarded}${failed > 0 ? `, 실패: ${failed}` : ''}`);
+      }
     } finally {
       setReviewingImage(false);
+      setImageProgress(null);
+      imageAbortRef.current = null;
     }
   };
 
@@ -351,11 +380,25 @@ export default function Toolbar({ docId, format, objects, selectMode, onSelectMo
         {/* ── LLM 검수 ── */}
         {sectionLabel('LLM 검수')}
         <div style={{ padding: '0 10px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <Button block size="small" loading={reviewingTable} onClick={handleReviewAllTables}>
-            Table 검수
+          <Button
+            block
+            size="small"
+            danger={reviewingTable}
+            onClick={reviewingTable ? () => tableAbortRef.current?.abort() : handleReviewAllTables}
+          >
+            {reviewingTable
+              ? `검수 중 (${tableProgress?.current}/${tableProgress?.total}) 취소`
+              : 'Table 검수'}
           </Button>
-          <Button block size="small" loading={reviewingImage} onClick={handleReviewAllImages}>
-            Image 검수
+          <Button
+            block
+            size="small"
+            danger={reviewingImage}
+            onClick={reviewingImage ? () => imageAbortRef.current?.abort() : handleReviewAllImages}
+          >
+            {reviewingImage
+              ? `검수 중 (${imageProgress?.current}/${imageProgress?.total}) 취소`
+              : 'Image 검수'}
           </Button>
         </div>
 

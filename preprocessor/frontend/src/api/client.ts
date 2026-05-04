@@ -158,13 +158,13 @@ export const flattenTable = async (docId: string, objId: string) => {
   return data as { processed_content: string };
 };
 
-export const reviewTable = async (docId: string, objId: string) => {
-  const { data } = await silentApi.post(`/api/objects/${docId}/${objId}/table/review`);
+export const reviewTable = async (docId: string, objId: string, signal?: AbortSignal) => {
+  const { data } = await silentApi.post(`/api/objects/${docId}/${objId}/table/review`, null, { signal });
   return data as { action: 'keep' | 'flatten'; processed_content: string };
 };
 
-export const reviewImage = async (docId: string, objId: string) => {
-  const { data } = await silentApi.post(`/api/objects/${docId}/${objId}/image/review`);
+export const reviewImage = async (docId: string, objId: string, signal?: AbortSignal) => {
+  const { data } = await silentApi.post(`/api/objects/${docId}/${objId}/image/review`, null, { signal });
   return data as
     | { action: 'discard'; objects: import('../types').DocumentObject[] }
     | { action: 'save'; processed_content: string; image_path: string }
@@ -253,4 +253,14 @@ export const saveKey = async (service: string, api_key: string) => {
 export const validateKey = async (service: string) => {
   const { data } = await api.post('/api/settings/keys/validate', { service });
   return data as { valid: boolean };
+};
+
+export const getLlmMode = async () => {
+  const { data } = await api.get('/api/settings/llm-mode');
+  return data as { mode: 'fast' | 'thinking' };
+};
+
+export const setLlmMode = async (mode: 'fast' | 'thinking') => {
+  const { data } = await api.post('/api/settings/llm-mode', { mode });
+  return data as { mode: 'fast' | 'thinking' };
 };

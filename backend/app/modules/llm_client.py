@@ -27,17 +27,21 @@ class LLMClient:
     _GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
     _GEMINI_STREAM_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent"
 
-    def __init__(self, provider: str = "gemini", api_token: str = ""):
+    def __init__(self, provider: str = "gemini", api_token: str = "", thinking: bool = False):
         self.api_token = api_token
+        self.thinking = thinking
+
+    def _gen_config(self, max_tokens: int) -> dict:
+        cfg: dict = {"maxOutputTokens": max_tokens}
+        if not self.thinking:
+            cfg["thinkingConfig"] = {"thinkingBudget": 0}
+        return cfg
 
     def complete(self, prompt: str, system: str = "", max_tokens: int = 8192) -> str:
         full_prompt = f"{system}\n\n{prompt}" if system else prompt
         body = {
             "contents": [{"parts": [{"text": full_prompt}]}],
-            "generationConfig": {
-                "maxOutputTokens": max_tokens,
-                "thinkingConfig": {"thinkingBudget": 0},
-            },
+            "generationConfig": self._gen_config(max_tokens),
         }
         resp = _post_with_retry(
             f"{self._GEMINI_URL}?key={self.api_token}",
@@ -51,10 +55,7 @@ class LLMClient:
         full_prompt = f"{system}\n\n{prompt}" if system else prompt
         body = {
             "contents": [{"parts": [{"text": full_prompt}]}],
-            "generationConfig": {
-                "maxOutputTokens": max_tokens,
-                "thinkingConfig": {"thinkingBudget": 0},
-            },
+            "generationConfig": self._gen_config(max_tokens),
         }
         try:
             with httpx.stream(
@@ -104,7 +105,7 @@ class LLMClient:
                     ]
                 }
             ],
-            "generationConfig": {"maxOutputTokens": max_tokens},
+            "generationConfig": self._gen_config(max_tokens),
         }
         resp = _post_with_retry(
             f"{self._GEMINI_URL}?key={self.api_token}",

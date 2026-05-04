@@ -108,3 +108,35 @@ def reset_vector_store(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="관리자만 실행 가능합니다")
     from app.modules import vector_store  # noqa: PLC0415
     return vector_store.reset_collection()
+
+
+class SetLlmModeRequest(BaseModel):
+    mode: str  # "fast" | "thinking"
+
+
+@router.get("/llm-mode")
+def get_llm_mode(
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    setting = db.get(AppSetting, "llm_thinking_mode")
+    return {"mode": setting.value if setting else "fast"}
+
+
+@router.post("/llm-mode")
+def set_llm_mode(
+    body: SetLlmModeRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="관리자만 변경 가능합니다")
+    if body.mode not in ("fast", "thinking"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="mode는 'fast' 또는 'thinking'이어야 합니다")
+    existing = db.get(AppSetting, "llm_thinking_mode")
+    if existing:
+        existing.value = body.mode
+    else:
+        db.add(AppSetting(key="llm_thinking_mode", value=body.mode))
+    db.commit()
+    return {"mode": body.mode}

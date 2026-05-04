@@ -34,13 +34,18 @@ def _resolve_token(api_token: str, db: Session) -> str:
     return api_token
 
 
+def _resolve_thinking(db: Session) -> bool:
+    setting = db.get(AppSetting, "llm_thinking_mode")
+    return bool(setting and setting.value == "thinking")
+
+
 @router.post("", response_model=SearchResponse)
 def search(
     req: SearchRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    llm = LLMClient(api_token=_resolve_token(req.api_token, db))
+    llm = LLMClient(api_token=_resolve_token(req.api_token, db), thinking=_resolve_thinking(db))
 
     # 1. 키워드 추출 (3GPP 폴백 전용)
     try:
@@ -150,7 +155,7 @@ def search_stream(
       data: {"type":"done","data":{"history_id":"..."}}
       data: {"type":"error","data":"..."}
     """
-    llm = LLMClient(api_token=_resolve_token(req.api_token, db))
+    llm = LLMClient(api_token=_resolve_token(req.api_token, db), thinking=_resolve_thinking(db))
 
     def event_stream():
         # 1. 키워드 추출 (3GPP 폴백 전용) + ChromaDB 검색

@@ -15,6 +15,9 @@ export default function AdminPage() {
   const [createMsg, setCreateMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [creating, setCreating] = useState(false)
 
+  const [llmMode, setLlmMode] = useState<'fast' | 'thinking'>('fast')
+  const [llmSaving, setLlmSaving] = useState(false)
+
   const myId = (() => {
     try {
       const token = sessionStorage.getItem('access_token')
@@ -32,7 +35,18 @@ export default function AdminPage() {
       return
     }
     api.getUsers().then((r) => setUsers(r.data))
+    api.getLlmMode().then((r) => setLlmMode(r.data.mode as 'fast' | 'thinking')).catch(() => {})
   }, [isAdmin, navigate])
+
+  const handleSetLlmMode = async (mode: 'fast' | 'thinking') => {
+    setLlmSaving(true)
+    try {
+      await api.setLlmMode(mode)
+      setLlmMode(mode)
+    } finally {
+      setLlmSaving(false)
+    }
+  }
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -96,6 +110,46 @@ export default function AdminPage() {
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+
+        {/* LLM 모드 설정 */}
+        <section>
+          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">LLM 모드</h2>
+          <div className="bg-[#161622] rounded-xl border border-white/8 p-5">
+            <p className="text-xs text-gray-500 mb-4">
+              RAG 검색 답변 생성에 사용할 LLM 동작 모드를 선택합니다.<br />
+              빠른 모드는 응답 속도가 빠르고, 사고 모드는 복잡한 질문에 더 정확합니다.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => handleSetLlmMode('fast')}
+                disabled={llmSaving}
+                className={`flex-1 flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl border text-sm font-medium transition-all disabled:opacity-40 ${
+                  llmMode === 'fast'
+                    ? 'bg-[#E6007E]/15 border-[#E6007E]/50 text-[#E6007E]'
+                    : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/25 hover:text-gray-200'
+                }`}
+              >
+                <span className="text-lg">⚡</span>
+                <span>빠른 모드</span>
+                <span className="text-xs font-normal opacity-70">thinking 비활성화</span>
+              </button>
+              <button
+                onClick={() => handleSetLlmMode('thinking')}
+                disabled={llmSaving}
+                className={`flex-1 flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl border text-sm font-medium transition-all disabled:opacity-40 ${
+                  llmMode === 'thinking'
+                    ? 'bg-[#E6007E]/15 border-[#E6007E]/50 text-[#E6007E]'
+                    : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/25 hover:text-gray-200'
+                }`}
+              >
+                <span className="text-lg">🧠</span>
+                <span>사고 모드</span>
+                <span className="text-xs font-normal opacity-70">extended thinking</span>
+              </button>
+            </div>
+            {llmSaving && <p className="text-xs text-gray-500 mt-3 text-center">저장 중…</p>}
+          </div>
+        </section>
 
         {/* 새 사용자 추가 */}
         <section>

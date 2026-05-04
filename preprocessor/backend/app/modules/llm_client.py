@@ -9,6 +9,24 @@ import httpx
 
 _GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
+_thinking_mode: bool = False
+
+
+def set_thinking_mode(thinking: bool) -> None:
+    global _thinking_mode
+    _thinking_mode = thinking
+
+
+def get_thinking_mode() -> bool:
+    return _thinking_mode
+
+
+def _build_gen_config(max_tokens: int) -> dict:
+    cfg: dict = {"maxOutputTokens": max_tokens}
+    if not _thinking_mode:
+        cfg["thinkingConfig"] = {"thinkingBudget": 0}
+    return cfg
+
 
 def _get_api_key() -> str:
     key = os.environ.get("GEMINI_API_KEY", "")
@@ -22,7 +40,7 @@ def call_llm(prompt: str, max_tokens: int = 1000, json_mode: bool = False) -> st
     key = _get_api_key()
     if not key:
         raise RuntimeError("Gemini API 키가 설정되지 않았습니다. 설정 패널에서 입력하거나 GEMINI_API_KEY 환경변수를 설정하세요.")
-    gen_config: dict = {"maxOutputTokens": max_tokens}
+    gen_config = _build_gen_config(max_tokens)
     if json_mode:
         gen_config["responseMimeType"] = "application/json"
     body = {
@@ -30,7 +48,7 @@ def call_llm(prompt: str, max_tokens: int = 1000, json_mode: bool = False) -> st
         "generationConfig": gen_config,
     }
     try:
-        resp = httpx.post(f"{_GEMINI_URL}?key={key}", json=body, timeout=60)
+        resp = httpx.post(f"{_GEMINI_URL}?key={key}", json=body, timeout=120)
         resp.raise_for_status()
         return resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
     except httpx.HTTPStatusError as e:
@@ -54,7 +72,7 @@ def call_vlm(image_b64: str, prompt: str, max_tokens: int = 1000, json_mode: boo
         raw_b64 = image_b64
         media_type = "image/png"
 
-    gen_config: dict = {"maxOutputTokens": max_tokens}
+    gen_config = _build_gen_config(max_tokens)
     if json_mode:
         gen_config["responseMimeType"] = "application/json"
 
@@ -70,7 +88,7 @@ def call_vlm(image_b64: str, prompt: str, max_tokens: int = 1000, json_mode: boo
         "generationConfig": gen_config,
     }
     try:
-        resp = httpx.post(f"{_GEMINI_URL}?key={key}", json=body, timeout=60)
+        resp = httpx.post(f"{_GEMINI_URL}?key={key}", json=body, timeout=120)
         resp.raise_for_status()
         return resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
     except httpx.HTTPStatusError as e:

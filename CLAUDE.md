@@ -348,5 +348,16 @@ for d in json.load(sys.stdin):
 
 ## 미완료 항목
 
-- `/api/ingest/check` 엔드포인트 — TDD RED 완료 (테스트 4개 실패), 구현 미완
 - 전처리 재배포 시 문서 재업로드 필요한 구조적 한계 (인메모리 → DB/스토리지 전환 검토 가능)
+
+## 전처리 에이전트 연동 점검
+
+`GET /api/ingest/check` — Wiki Agent 로그인 가능 여부 사전 점검.
+
+| 상황 | 응답 |
+|------|------|
+| 비밀번호 미설정 | `{"ok": false, "error": "비밀번호가 설정되지 않았습니다"}` |
+| 자격증명 오류 | `{"ok": false, "login_status": 401}` |
+| 정상 | `{"ok": true}` |
+
+`GET /api/ingest/check-wiki-auth` — 상세 진단용 (비밀번호 해시, 환경변수 출처 등 포함).

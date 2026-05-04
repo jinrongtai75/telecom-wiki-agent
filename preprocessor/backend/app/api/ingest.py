@@ -39,6 +39,26 @@ async def _get_wiki_token() -> str:
     return res.json()["access_token"]
 
 
+@router.get("/check")
+async def check():
+    """Wiki Agent 연동 상태 점검 — 실제 로그인 시도 후 결과 반환."""
+    wiki_pass = _get_wiki_pass()
+    if not wiki_pass:
+        return {"ok": False, "error": "비밀번호가 설정되지 않았습니다"}
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            res = await client.post(
+                f"{_WIKI_URL}/api/auth/login",
+                json={"username": _get_wiki_user(), "password": wiki_pass},
+            )
+            res.raise_for_status()
+        return {"ok": True}
+    except httpx.HTTPStatusError as e:
+        return {"ok": False, "login_status": e.response.status_code}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 @router.get("/check-wiki-auth")
 async def check_wiki_auth():
     """Wiki Agent 로그인 진단용 엔드포인트 — 실제 로그인 시도 후 결과 반환."""

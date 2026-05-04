@@ -58,11 +58,11 @@ async def ping_gemini():
 class SetLlmModeRequest(BaseModel):
     mode: str  # "fast" | "thinking"
 
-\[MASKED_EMAIL]('/llm-mode')
+@router.get('/llm-mode')
 async def get_llm_mode():
     return {"mode": "thinking" if get_thinking_mode() else "fast"}
 
-\[MASKED_EMAIL]('/llm-mode')
+@router.post('/llm-mode')
 async def set_llm_mode(body: SetLlmModeRequest):
     if body.mode not in ("fast", "thinking"):
         raise HTTPException(status_code=400, detail="mode는 'fast' 또는 'thinking'이어야 합니다")
